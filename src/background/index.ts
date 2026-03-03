@@ -8,11 +8,54 @@ interface DownloadResourceRequest {
     payload?: DownloadResourcePayload;
 }
 
+function decodeUriComponentSafe(value: string) {
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value;
+    }
+}
+
+function decodeFilenameText(value: string) {
+    let current = String(value || '');
+    let prev = '';
+
+    while (current !== prev && /%[0-9a-f]{2}/i.test(current)) {
+        prev = current;
+        current = decodeUriComponentSafe(current);
+    }
+
+    return current;
+}
+
 function cleanFilename(value: string | undefined) {
-    return String(value || '')
-        .replace(/[\\/:*?"<>|]/g, ' ')
+    return decodeFilenameText(String(value || ''))
+        .replace(/[\\/:*?"<>|%]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+function getFilenameExtension(name: string) {
+    const match = String(name || '').match(/\.([a-z0-9]{2,10})$/i);
+    return match?.[1] ? match[1].toLowerCase() : '';
+}
+
+function getExtensionFromUrl(url: string) {
+    try {
+        const pathname = new URL(url).pathname || '';
+        const filename = decodeFilenameText(pathname.split('/').pop() || '');
+        return getFilenameExtension(filename);
+    } catch {
+        return '';
+    }
+}
+
+function ensureFilenameExtension(filename: string, url: string) {
+    if (!filename) return '';
+    if (getFilenameExtension(filename)) return filename;
+
+    const ext = getExtensionFromUrl(url);
+    return ext ? `${filename}.${ext}` : filename;
 }
 
 function isDownloadRequest(message: DownloadResourceRequest) {
@@ -29,7 +72,10 @@ extensionApi?.runtime?.onMessage?.addListener(
 
         const payload = message?.payload;
         const url = String(payload?.url || '').trim();
-        const filename = cleanFilename(payload?.filename);
+        const filename = ensureFilenameExtension(
+            cleanFilename(payload?.filename),
+            url,
+        );
 
         if (!url) {
             sendResponse({ ok: false, error: 'invalid_url' });
