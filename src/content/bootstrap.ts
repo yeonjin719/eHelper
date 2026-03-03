@@ -114,6 +114,11 @@
         return Boolean(E.isUbcompletionProgressPage?.());
     }
 
+    function isPluginFilePage() {
+        const pathname = String(location.pathname || '').toLowerCase();
+        return pathname.includes('/pluginfile.php');
+    }
+
     async function collectProgressPageItems() {
         if (typeof E.collectProgressPageItems === 'function') {
             const items = await E.collectProgressPageItems();
@@ -398,6 +403,11 @@
         E.refreshAll = refreshAll;
 
         E.initVodEnhancements();
+
+        if (isPluginFilePage()) {
+            // 파일 직접 보기 페이지(PDF/리소스 원본)에서는 대시보드를 렌더링하지 않음.
+            return;
+        }
 
         if (E.isVodPlayerPage() && !isDashboardPage()) {
             // 동영상 페이지에서는 탭 타이틀 기능만 유지하고 사이드바는 강제로 띄우지 않음.
