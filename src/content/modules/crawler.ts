@@ -115,6 +115,127 @@
         return out;
     };
 
+    E.normalizeDurationText = function normalizeDurationText(value) {
+        const text = E.cleanText(value || '');
+        if (!text || text === '-' || text === '&nbsp;') return '';
+        const match = text.match(/\d{1,3}:\d{2}(?::\d{2})?/);
+        return match?.[0] || text;
+    };
+
+    E.normalizeAttendanceMeta = function normalizeAttendanceMeta(value) {
+        const text = E.cleanText(value || '');
+        if (!text) return '';
+
+        const pct = text.match(/(\d{1,3})\s*%/);
+        if (pct?.[1]) return `출석 ${pct[1]}%`;
+
+        if (/^(?:출석|attendance)\b/i.test(text)) {
+            return text.replace(/^(?:attendance)\s*/i, '출석 ');
+        }
+
+        if (/(출석|인정|완료|attend|present|o|y)/i.test(text)) return '출석 완료';
+        if (/(미출석|결석|미완료|absent|x|n)/i.test(text)) return '출석 미완료';
+
+        return `출석 ${text}`;
+    };
+
+    E.normalizeMetaPart = function normalizeMetaPart(value) {
+        const part = E.cleanText(value || '');
+        if (!part) return '';
+
+        if (/^학습\s*:/i.test(part)) {
+            const times = part.match(/\d{1,3}:\d{2}(?::\d{2})?/g) || [];
+            if (times.length >= 2) return `학습: ${times[0]} / ${times[1]}`;
+            if (times.length === 1) return `학습: ${times[0]}`;
+            return part.replace(/^학습\s*:\s*/i, '학습: ');
+        }
+
+        if (/^(?:출석|attendance)\b/i.test(part)) {
+            return E.normalizeAttendanceMeta(part);
+        }
+
+        if (/^(?:기간|period)\s*(?::|：|\s|$)/i.test(part)) {
+            const rest = E.cleanText(
+                part.replace(/^(?:기간|period)\s*(?::|：)?\s*/i, ''),
+            );
+            return rest ? `기간: ${rest}` : '기간:';
+        }
+
+        return part;
+    };
+
+    E.metaPartKind = function metaPartKind(part) {
+        if (/^학습\s*:/i.test(part)) return 'study';
+        if (/^출석\b/i.test(part)) return 'attendance';
+        if (/^(?:기간|period)\s*:/i.test(part)) return 'period';
+        return `text:${E.canonicalTitle(part)}`;
+    };
+
+    E.metaPartScore = function metaPartScore(kind, part) {
+        const text = E.cleanText(part || '');
+        if (!text) return 0;
+
+        if (kind === 'study') {
+            const timeMatches = text.match(/\d{1,3}:\d{2}(?::\d{2})?/g) || [];
+            return timeMatches.length >= 2 ? 3 : timeMatches.length === 1 ? 2 : 1;
+        }
+        if (kind === 'attendance') {
+            if (/\d{1,3}\s*%/.test(text)) return 3;
+            if (/(완료|미완료)/.test(text)) return 2;
+            return 1;
+        }
+        if (kind === 'period') {
+            if (/\d{4}[^~\-]*[~\-][^~\-]*\d{4}/.test(text)) return 3;
+            if (/\d{4}\s*[.\-/]\s*\d{1,2}\s*[.\-/]\s*\d{1,2}/.test(text))
+                return 2;
+            return 1;
+        }
+        return text.length > 40 ? 2 : 1;
+    };
+
+    E.mergeMetaText = function mergeMetaText(primary, secondary) {
+        const partsByKey = new Map();
+        const order = [];
+
+        const upsert = (raw, preferIncoming = false) => {
+            const normalized = E.normalizeMetaPart(raw);
+            if (!normalized) return;
+            const key = E.metaPartKind(normalized);
+            const prev = partsByKey.get(key);
+            if (!prev) {
+                partsByKey.set(key, normalized);
+                order.push(key);
+                return;
+            }
+
+            const nextScore = E.metaPartScore(key, normalized);
+            const prevScore = E.metaPartScore(key, prev);
+            if (nextScore > prevScore || (preferIncoming && nextScore === prevScore)) {
+                partsByKey.set(key, normalized);
+            }
+        };
+
+        const ingest = (value, preferIncoming = false) => {
+            const source = E.cleanText(value || '');
+            if (!source) return;
+            source
+                .split(/\s*[·\n\r]+\s*/g)
+                .map((part) => E.cleanText(part))
+                .filter(Boolean)
+                .forEach((part) => upsert(part, preferIncoming));
+        };
+
+        ingest(primary, false);
+        ingest(secondary, true);
+
+        const merged = order
+            .map((key) => partsByKey.get(key))
+            .filter(Boolean)
+            .join(' · ');
+
+        return merged || undefined;
+    };
+
     E.extractSignalsFromActivityNode = function extractSignalsFromActivityNode(
         activityNode,
     ) {
@@ -401,6 +522,10 @@
                 titleIdx >= 0
                     ? E.cleanText(cells[titleIdx + 3]?.textContent)
                     : E.cleanText(cells[4]?.textContent);
+            const normalizedRequiredTime = E.normalizeDurationText(requiredTimeText);
+            const normalizedViewedTime = E.normalizeDurationText(totalTimeTextRaw);
+            const normalizedAttendance =
+                E.normalizeAttendanceMeta(attendanceText);
 
             const isMissingViewedTime =
                 !totalTimeTextRaw ||
@@ -408,10 +533,10 @@
                 /^\s*-\s*/.test(totalTimeTextRaw);
             const totalTimeText = isMissingViewedTime
                 ? '00:00'
-                : totalTimeTextRaw;
+                : normalizedViewedTime || totalTimeTextRaw;
 
             const statusFromTimes = E.inferStatusFromPlayTimes(
-                requiredTimeText,
+                normalizedRequiredTime || requiredTimeText,
                 totalTimeText,
             );
             const statusFromAttendance =
@@ -426,10 +551,12 @@
             const pct = E.extractProgressPercent(rowText);
             let meta;
             if (requiredTimeText || totalTimeTextRaw) {
-                const viewed = isMissingViewedTime ? '00:00' : totalTimeTextRaw;
-                const required = requiredTimeText || '-';
+                const viewed = isMissingViewedTime
+                    ? '00:00'
+                    : normalizedViewedTime || totalTimeTextRaw;
+                const required = normalizedRequiredTime || requiredTimeText || '-';
                 meta = `학습: ${viewed} / ${required}`;
-                if (attendanceText) meta += ` · 출석 ${attendanceText}`;
+                if (normalizedAttendance) meta += ` · ${normalizedAttendance}`;
             } else if (typeof pct === 'number') {
                 meta = `진도 ${pct}%`;
             } else if (
@@ -766,16 +893,6 @@
                 rank: E.rankLectureUrl(c.url),
             }));
 
-        const mergeMeta = (base, extra) => {
-            const left = E.cleanText(base || '');
-            const right = E.cleanText(extra || '');
-            if (!left) return right || undefined;
-            if (!right) return left || undefined;
-            if (left.includes(right)) return left;
-            if (right.includes(left)) return right;
-            return `${left} · ${right}`;
-        };
-
         const pickBestUrlCandidate = (hits) => {
             if (!Array.isArray(hits) || !hits.length) return undefined;
             const withUrl = hits.filter((hit) =>
@@ -814,7 +931,7 @@
                 ...item,
                 section: item.section || urlHit?.section || metaHit?.section,
                 dueAt: item.dueAt ?? metaHit?.dueAt ?? urlHit?.dueAt,
-                meta: mergeMeta(item.meta, metaHit?.meta || urlHit?.meta),
+                meta: E.mergeMetaText(item.meta, metaHit?.meta || urlHit?.meta),
             };
 
             if (urlHit?.url && (unresolved || urlHit.rank > currentRank)) {
@@ -845,7 +962,7 @@
             if (!hit) return item;
 
             const status = hit.status !== 'UNKNOWN' ? hit.status : item.status;
-            const meta = item.meta || hit.meta;
+            const meta = E.mergeMetaText(hit.meta, item.meta);
 
             return {
                 ...item,
@@ -1003,7 +1120,7 @@
                     prev.status === 'UNKNOWN' && item.status !== 'UNKNOWN'
                         ? item.status
                         : prev.status,
-                meta: prev.meta || item.meta,
+                meta: E.mergeMetaText(prev.meta, item.meta),
                 section: prev.section || item.section,
             });
         }
@@ -1086,48 +1203,36 @@
                     courseDoc,
                     courseId,
                 );
+                let bestReportMap = null;
+                let bestReportUrl = '';
+                let bestReportScore = -1;
+
                 for (const reportUrl of reportUrls) {
                     try {
                         const reportHtml = await E.fetchHtml(reportUrl);
                         const reportMap =
                             E.parseStatusRowsFromReportHtml(reportHtml);
-                        lectureItems = E.applyReportStatus(
-                            lectureItems,
-                            reportMap,
-                        );
+                        const rowsCount = Array.isArray(reportMap.rows)
+                            ? reportMap.rows.length
+                            : 0;
+                        const byUrlCount = reportMap.byUrl?.size || 0;
+                        const byTitleCount = reportMap.byTitle?.size || 0;
+                        const hasReportData =
+                            rowsCount > 0 || byUrlCount > 0 || byTitleCount > 0;
+                        if (!hasReportData) continue;
 
-                        if (
-                            Array.isArray(reportMap.rows) &&
-                            reportMap.rows.length
-                        ) {
-                            const fallbackBase = new URL(
-                                `/report/ubcompletion/progress.php?id=${courseId}`,
-                                location.origin,
-                            ).toString();
+                        const reportScore =
+                            rowsCount * 100 +
+                            byUrlCount * 10 +
+                            byTitleCount +
+                            (reportUrl.includes('/report/ubcompletion/')
+                                ? 1000
+                                : 0);
 
-                            const fromReport =
-                                E.buildLectureItemsFromReportRows(
-                                    reportMap.rows,
-                                    courseId,
-                                    normalizedCourseName,
-                                    fallbackBase,
-                                    normalizedCourseIsNew,
-                                );
-                            const courseViewUrl = new URL(
-                                `/course/view.php?id=${courseId}`,
-                                location.origin,
-                            ).toString();
-                            const resolvedFromReport =
-                                E.resolveLectureUrlsByCandidates(
-                                    fromReport,
-                                    lectureLinkCandidates,
-                                    courseViewUrl,
-                                );
-
-                            lectureItems = E.dedupeItems([
-                                ...lectureItems,
-                                ...resolvedFromReport,
-                            ]);
+                        if (reportScore > bestReportScore) {
+                            bestReportScore = reportScore;
+                            bestReportMap = reportMap;
+                            bestReportUrl = reportUrl;
                         }
                     } catch (err) {
                         const msg = String(err?.message || err || '');
@@ -1156,6 +1261,55 @@
                             err,
                         );
                     }
+                }
+
+                if (bestReportMap) {
+                    lectureItems = E.applyReportStatus(
+                        lectureItems,
+                        bestReportMap,
+                    );
+
+                    if (
+                        Array.isArray(bestReportMap.rows) &&
+                        bestReportMap.rows.length
+                    ) {
+                        const fallbackBase = new URL(
+                            `/report/ubcompletion/progress.php?id=${courseId}`,
+                            location.origin,
+                        ).toString();
+
+                        const fromReport = E.buildLectureItemsFromReportRows(
+                            bestReportMap.rows,
+                            courseId,
+                            normalizedCourseName,
+                            fallbackBase,
+                            normalizedCourseIsNew,
+                        );
+                        const courseViewUrl = new URL(
+                            `/course/view.php?id=${courseId}`,
+                            location.origin,
+                        ).toString();
+                        const resolvedFromReport = E.resolveLectureUrlsByCandidates(
+                            fromReport,
+                            lectureLinkCandidates,
+                            courseViewUrl,
+                        );
+
+                        lectureItems = E.dedupeItems([
+                            ...lectureItems,
+                            ...resolvedFromReport,
+                        ]);
+                    }
+
+                    console.info(
+                        '[ECDASH] lecture report source selected:',
+                        bestReportUrl,
+                        {
+                            rows: bestReportMap.rows?.length || 0,
+                            byUrl: bestReportMap.byUrl?.size || 0,
+                            byTitle: bestReportMap.byTitle?.size || 0,
+                        },
+                    );
                 }
             }
 

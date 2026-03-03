@@ -42,6 +42,35 @@ function formatDueDate(dueAt?: number) {
     return `${month}.${day} ${hour}:${minute}`;
 }
 
+function uniqueMetaLines(value: string) {
+    const lines = String(value || '')
+        .split(/\s*·\s*/)
+        .map((line) => String(line || '').trim())
+        .filter(Boolean);
+
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const line of lines) {
+        const key = line.toLowerCase().replace(/\s+/g, '');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(line);
+    }
+    return out;
+}
+
+function shouldHideDetailMetaLine(line: string) {
+    const normalized = String(line || '')
+        .toLowerCase()
+        .replace(/\s+/g, '');
+
+    if (!normalized.startsWith('출석')) return false;
+    if (normalized.includes('미완료')) return false;
+    if (normalized.includes('0%')) return false;
+
+    return normalized.includes('완료') || normalized.includes('100%');
+}
+
 export function DashboardItemCard({
     item,
     runtime,
@@ -60,20 +89,18 @@ export function DashboardItemCard({
             ? ''
             : [ddayText, normalizedStatusText].filter(Boolean).join(' ');
 
-    const detailMetaLines = [detailText]
-        .map((value) => String(value || '').trim())
-        .filter(Boolean)
-        .join(' · ')
-        .split(/\s*·\s*/)
-        .map((value) => String(value || '').trim())
-        .filter(Boolean);
-    const periodMetaLines = [periodText]
-        .map((value) => String(value || '').trim())
-        .filter(Boolean)
-        .join(' · ')
-        .split(/\s*·\s*/)
-        .map((value) => String(value || '').trim())
-        .filter(Boolean);
+    const detailMetaLines = uniqueMetaLines(
+        [detailText]
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+            .join(' · '),
+    ).filter((line) => !shouldHideDetailMetaLine(line));
+    const periodMetaLines = uniqueMetaLines(
+        [periodText]
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+            .join(' · '),
+    );
 
     return (
         <button
