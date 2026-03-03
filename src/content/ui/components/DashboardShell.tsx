@@ -8,6 +8,7 @@ import type { DashboardShellProps } from './dashboardShell/types';
 export function DashboardShell({
     collapsed,
     sub: _sub,
+    isDashboardPage,
     filter,
     typeFilter,
     allCourses,
@@ -37,7 +38,7 @@ export function DashboardShell({
     onResetHiddenItems,
     children,
 }: DashboardShellProps) {
-    const settingsVisible = settingsOpen && !collapsed;
+    const settingsVisible = settingsOpen && !collapsed && isDashboardPage;
 
     return (
         <div className={styles.root}>
@@ -49,6 +50,7 @@ export function DashboardShell({
             >
                 <DashboardHeader
                     collapsed={collapsed}
+                    showSettingsButton={isDashboardPage}
                     onToggleCollapsed={onToggleCollapsed}
                     onRefresh={onRefresh}
                     onOpenSettings={onOpenSettings}

@@ -17,6 +17,7 @@ export interface DashboardSelectOption {
 export interface DashboardShellProps {
     collapsed: boolean;
     sub: string;
+    isDashboardPage: boolean;
     filter: string[];
     typeFilter: string[];
     allCourses: string[];

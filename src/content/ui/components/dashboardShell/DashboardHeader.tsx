@@ -2,6 +2,7 @@ import { DASHBOARD_SHELL_STYLES as styles } from './styles';
 
 interface DashboardHeaderProps {
     collapsed: boolean;
+    showSettingsButton: boolean;
     onToggleCollapsed: () => void | Promise<void>;
     onRefresh: () => void;
     onOpenSettings: () => void;
@@ -9,6 +10,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({
     collapsed,
+    showSettingsButton,
     onToggleCollapsed,
     onRefresh,
     onOpenSettings,
@@ -47,16 +49,18 @@ export function DashboardHeader({
                             ↻
                         </button>
 
-                        <button
-                            id="ecdash-settings-open"
-                            type="button"
-                            className={styles.iconButton}
-                            title="설정"
-                            aria-label="설정"
-                            onClick={onOpenSettings}
-                        >
-                            ⚙
-                        </button>
+                        {showSettingsButton && (
+                            <button
+                                id="ecdash-settings-open"
+                                type="button"
+                                className={styles.iconButton}
+                                title="설정"
+                                aria-label="설정"
+                                onClick={onOpenSettings}
+                            >
+                                ⚙
+                            </button>
+                        )}
                         <button
                             id="ecdash-toggle"
                             type="button"

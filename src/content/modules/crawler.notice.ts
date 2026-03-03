@@ -102,15 +102,10 @@
                 cells[3]?.textContent ||
                     row.querySelector('td:nth-child(4)')?.textContent,
             );
-            const views = E.cleanText(
-                cells[4]?.textContent ||
-                    row.querySelector('td:nth-child(5)')?.textContent,
-            );
 
             const metaParts = [];
             if (writer) metaParts.push(`작성자 ${writer}`);
             if (dateText) metaParts.push(`작성일 ${dateText}`);
-            if (views) metaParts.push(`조회 ${views}`);
 
             items.push({
                 id: E.makeId('NOTICE', courseId, title, url),

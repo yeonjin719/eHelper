@@ -1,34 +1,34 @@
 {
-  "manifest_version": 3,
-  "name": "SMU eCampus Dashboard",
-  "version": "1.0.0",
-  "description": "SMU eCampus 과목별 과제/강의/토론/자료를 한눈에 보는 확장 프로그램",
-  "permissions": ["storage", "tabs", "downloads"],
-  "host_permissions": ["https://ecampus.smu.ac.kr/*"],
-  "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
-  "background": {
-    "service_worker": "dist/background.js",
-    "type": "module"
-  },
-  "content_scripts": [
-    {
-      "matches": ["https://ecampus.smu.ac.kr/*"],
-      "js": ["dist/content.js"],
-      "css": ["dist/content.css"],
-      "run_at": "document_idle"
+    "manifest_version": 3,
+    "name": "eHelper",
+    "version": "1.0.0",
+    "description": "SMU eCampus 과목별 과제/강의/토론/자료를 한눈에 보는 확장 프로그램",
+    "permissions": ["storage", "tabs", "downloads"],
+    "host_permissions": ["https://ecampus.smu.ac.kr/*"],
+    "icons": {
+        "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "background": {
+        "service_worker": "dist/background.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": ["https://ecampus.smu.ac.kr/*"],
+            "js": ["dist/content.js"],
+            "css": ["dist/content.css"],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_title": "eHelper",
+        "default_popup": "dist/popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png"
+        }
     }
-  ],
-  "action": {
-    "default_title": "SMU eCampus Dashboard",
-    "default_popup": "dist/popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png"
-    }
-  }
 }
