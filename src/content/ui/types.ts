@@ -13,6 +13,7 @@ export interface DashboardItem {
     url?: string;
     section?: string;
     dueAt?: number;
+    dueScore?: number;
     status: ItemStatus;
     meta?: string;
 }

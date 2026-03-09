@@ -19,11 +19,20 @@
 
         if (!texts.length) {
             const bodyText = E.cleanText(doc.body?.textContent || '');
-            if (bodyText) texts.push(bodyText.slice(0, 2000));
+            const hasDueLikeContext =
+                /(마감|종료|제출|deadline|due|until|기간|period|부터|까지|[~∼〜～])/i.test(
+                    bodyText,
+                );
+            if (bodyText && hasDueLikeContext) {
+                texts.push(bodyText.slice(0, 2000));
+            }
         }
 
+        const dueSignal = E.pickDueSignalFromTexts(texts);
+
         return {
-            dueAt: E.pickDueAtFromTexts(texts),
+            dueAt: dueSignal?.dueAt,
+            dueScore: dueSignal?.dueScore || 0,
             meta: E.pickMetaFromTexts(texts),
         };
     };
@@ -62,10 +71,12 @@
                 const doc = new DOMParser().parseFromString(html, 'text/html');
                 const detail = E.extractDueMetaFromDoc(doc);
                 const participation = E.inferForumParticipationStatus(doc);
+                const dueInfo = E.pickPreferredDueInfo(item, detail);
 
                 return {
                     ...item,
-                    dueAt: item.dueAt ?? detail.dueAt,
+                    dueAt: dueInfo.dueAt,
+                    dueScore: dueInfo.dueScore,
                     status:
                         item.status === 'UNKNOWN' && participation !== 'UNKNOWN'
                             ? participation
@@ -93,6 +104,7 @@
                 const html = await E.fetchHtml(item.url);
                 const doc = new DOMParser().parseFromString(html, 'text/html');
                 const detail = E.extractDueMetaFromDoc(doc);
+                const dueInfo = E.pickPreferredDueInfo(item, detail);
 
                 const completionTexts = E.collectTextBySelectors(doc, [
                     '.completion-info',
@@ -105,7 +117,8 @@
 
                 return {
                     ...item,
-                    dueAt: item.dueAt ?? detail.dueAt,
+                    dueAt: dueInfo.dueAt,
+                    dueScore: dueInfo.dueScore,
                     status:
                         item.status === 'UNKNOWN' &&
                         completionStatus !== 'UNKNOWN'

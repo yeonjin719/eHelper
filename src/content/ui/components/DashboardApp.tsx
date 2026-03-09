@@ -213,6 +213,8 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
         <DashboardShell
             collapsed={state.collapsed}
             sub={state.sub}
+            loading={state.loading}
+            loadingMessage={state.loadingMessage}
             isDashboardPage={isDashboardPage}
             filter={state.filter}
             typeFilter={state.typeFilter}

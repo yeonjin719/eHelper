@@ -144,14 +144,19 @@
             '.description',
         ]);
 
-        const dueAt = E.pickDueAtFromTexts(dueTexts);
+        const dueSignal = E.pickDueSignalFromTexts(dueTexts);
         const meta = E.pickMetaFromTexts([
             ...completionTexts,
             ...dueTexts,
             ...metaTexts,
         ]);
 
-        return { status, dueAt, meta };
+        return {
+            status,
+            dueAt: dueSignal?.dueAt,
+            dueScore: dueSignal?.dueScore || 0,
+            meta,
+        };
     };
 
     // course/view 문서 전체를 순회해 대시보드 아이템 배열을 만든다.
@@ -224,7 +229,7 @@
                     if (!type) continue;
                     if (type === 'ASSIGNMENT' && !includeAssignments) continue;
 
-                    const { status, dueAt, meta } =
+                    const { status, dueAt, dueScore, meta } =
                         E.extractSignalsFromActivityNode(activityNode);
 
                     items.push({
@@ -237,6 +242,7 @@
                         url: href,
                         section,
                         dueAt,
+                        dueScore,
                         status,
                         meta,
                     });

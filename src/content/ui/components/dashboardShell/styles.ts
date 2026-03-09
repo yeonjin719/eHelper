@@ -9,6 +9,16 @@ export const DASHBOARD_SHELL_STYLES = {
     headerExpanded: 'border-b border-zinc-100 bg-white px-4 py-3 text-zinc-900',
     iconButton:
         'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-[15px] font-semibold leading-none text-zinc-600 transition hover:border-zinc-300 hover:bg-white hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
+    iconButtonBusy:
+        'cursor-wait border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700',
+    loadingChip:
+        'inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700',
+    loadingStatus:
+        'mt-2 flex items-start gap-2 rounded-xl border border-sky-200 bg-[linear-gradient(135deg,rgba(240,249,255,0.98),rgba(236,253,245,0.92))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
+    loadingStatusSpinner:
+        'mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-sky-200 border-t-sky-600',
+    loadingStatusTitle: 'text-[12px] font-semibold tracking-tight text-sky-900',
+    loadingStatusText: 'mt-0.5 text-[11px] leading-4 text-sky-700',
     contentLayout: 'flex min-h-0 flex-1 flex-col',
     filterSection: 'space-y-2 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3',
     filterSelectGrid: 'grid grid-cols-2 gap-2',

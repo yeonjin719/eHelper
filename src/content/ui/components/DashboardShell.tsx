@@ -8,6 +8,8 @@ import type { DashboardShellProps } from './dashboardShell/types';
 export function DashboardShell({
     collapsed,
     sub: _sub,
+    loading,
+    loadingMessage,
     isDashboardPage,
     filter,
     typeFilter,
@@ -50,6 +52,8 @@ export function DashboardShell({
             >
                 <DashboardHeader
                     collapsed={collapsed}
+                    isLoading={loading}
+                    loadingMessage={loadingMessage}
                     showSettingsButton={isDashboardPage}
                     onToggleCollapsed={onToggleCollapsed}
                     onRefresh={onRefresh}

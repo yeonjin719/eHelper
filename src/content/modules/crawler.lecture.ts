@@ -58,6 +58,7 @@
                         url: '',
                         section,
                         dueAt: signals.dueAt,
+                        dueScore: signals.dueScore,
                         meta: signals.meta,
                     });
                     continue;
@@ -83,6 +84,7 @@
                         url: looksLikeActivityHref ? href : '',
                         section,
                         dueAt: signals.dueAt,
+                        dueScore: signals.dueScore,
                         meta: signals.meta,
                     });
                 }
@@ -172,10 +174,12 @@
 
             const urlHit = pickBestUrlCandidate(hits);
             const metaHit = pickBestMetaCandidate(hits) || urlHit;
+            const dueInfo = E.pickPreferredDueInfo(item, metaHit || urlHit);
             const mergedBase = {
                 ...item,
                 section: item.section || urlHit?.section || metaHit?.section,
-                dueAt: item.dueAt ?? metaHit?.dueAt ?? urlHit?.dueAt,
+                dueAt: dueInfo.dueAt,
+                dueScore: dueInfo.dueScore,
                 meta: E.mergeMetaText(item.meta, metaHit?.meta || urlHit?.meta),
             };
 

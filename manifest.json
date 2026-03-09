@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "eHelper",
     "version": "1.0.0",
-    "description": "SMU eCampus 과목별 과제/강의/토론/자료를 한눈에 보는 확장 프로그램",
+    "description": "eCampus 과목별 과제/강의/토론/자료를 한눈에 보는 확장 프로그램",
     "permissions": ["storage", "downloads"],
     "host_permissions": ["https://ecampus.smu.ac.kr/*"],
     "icons": {
@@ -28,7 +28,9 @@
         "default_popup": "dist/popup.html",
         "default_icon": {
             "16": "icons/icon16.png",
-            "32": "icons/icon32.png"
+            "32": "icons/icon32.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
         }
     }
 }

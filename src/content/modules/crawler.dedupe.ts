@@ -16,6 +16,8 @@
                 continue;
             }
 
+            const dueInfo = E.pickPreferredDueInfo(prev, item);
+
             map.set(key, {
                 ...prev,
                 courseName:
@@ -27,7 +29,8 @@
                               prev.courseName || item.courseName,
                           )) || '',
                 courseIsNew: Boolean(prev.courseIsNew || item.courseIsNew),
-                dueAt: prev.dueAt ?? item.dueAt,
+                dueAt: dueInfo.dueAt,
+                dueScore: dueInfo.dueScore,
                 status:
                     prev.status === 'UNKNOWN' && item.status !== 'UNKNOWN'
                         ? item.status

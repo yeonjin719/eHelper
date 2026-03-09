@@ -202,7 +202,12 @@
                 E.render(visibleSnapshotItems);
                 return;
             }
-            E.setLoading?.(true, '데이터를 가져오는 중...');
+            E.setLoading?.(
+                true,
+                force
+                    ? '최신 항목을 다시 불러오는 중이에요. 기존 목록은 그대로 유지돼요.'
+                    : '데이터를 가져오는 중...',
+            );
 
             if (isDashboardPage()) {
                 // 대시보드 과목 목록이 일시적으로 비면 기존 과목 캐시를 대체값으로 사용.

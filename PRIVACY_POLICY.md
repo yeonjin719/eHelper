@@ -1,8 +1,8 @@
-# 개인정보처리방침 (SMU eCampus Dashboard)
+# 개인정보처리방침 (eHelper)
 
 시행일: 2026-03-03
 
-SMU eCampus Dashboard(이하 "확장프로그램")는 사용자 데이터를 다음과 같이 처리합니다.
+eHelper(이하 "확장프로그램")는 사용자 데이터를 다음과 같이 처리합니다.
 
 ## 1. 수집하는 정보
 
@@ -31,7 +31,6 @@ SMU eCampus Dashboard(이하 "확장프로그램")는 사용자 데이터를 다
 ## 5. 권한 사용
 
 - `storage`: 설정 및 캐시 저장
-- `tabs`: 팝업에서 eCampus 탭 열기/이동
 - `downloads`: 사용자 클릭 시 자료/영상 다운로드
 - host permissions (`https://ecampus.smu.ac.kr/*`): 해당 사이트에서 기능 제공을 위한 페이지 내용 접근
 

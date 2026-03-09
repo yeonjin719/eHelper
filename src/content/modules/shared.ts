@@ -139,6 +139,113 @@
         return Math.max(...candidates);
     };
 
+    E.parseDueSignalFromText = function parseDueSignalFromText(text) {
+        const source = E.cleanText(text);
+        if (!source) return undefined;
+
+        const candidates = E.extractDateCandidates(source);
+        if (!candidates.length) return undefined;
+
+        const hasDueKeyword =
+            /(마감|종료|제출|deadline|due|until|\bends?\b|\bclosing\b)/i.test(
+                source,
+            );
+        const hasStartKeyword =
+            /(시작|개시|오픈|열림|공개|게시|available\s*from|\bstarts?\b|\bbegins?\b|\bopens?\b)/i.test(
+                source,
+            );
+        const hasRangeKeyword =
+            /(기간|period|부터|까지|[~∼〜～]|(?:\bto\b))/i.test(source);
+        const isRange = hasRangeKeyword || candidates.length >= 2;
+
+        if (hasStartKeyword && !hasDueKeyword && !isRange) {
+            return undefined;
+        }
+
+        let dueScore = 1;
+        if (isRange) dueScore = 2;
+        if (hasDueKeyword) dueScore = isRange ? 4 : 3;
+
+        return {
+            dueAt: Math.max(...candidates),
+            dueScore,
+        };
+    };
+
+    E.pickDueSignalFromTexts = function pickDueSignalFromTexts(texts) {
+        if (!Array.isArray(texts) || !texts.length) return undefined;
+
+        let best;
+        for (const text of texts) {
+            const signal = E.parseDueSignalFromText(text);
+            if (!signal?.dueAt) continue;
+
+            if (
+                !best ||
+                signal.dueScore > best.dueScore ||
+                (signal.dueScore === best.dueScore &&
+                    signal.dueAt > best.dueAt)
+            ) {
+                best = signal;
+            }
+        }
+
+        return best;
+    };
+
+    E.pickPreferredDueInfo = function pickPreferredDueInfo(current, incoming) {
+        const currentDueAt =
+            typeof current?.dueAt === 'number' ? current.dueAt : undefined;
+        const incomingDueAt =
+            typeof incoming?.dueAt === 'number' ? incoming.dueAt : undefined;
+        const currentDueScore = Number(current?.dueScore || 0);
+        const incomingDueScore = Number(incoming?.dueScore || 0);
+
+        if (typeof currentDueAt !== 'number' && typeof incomingDueAt !== 'number') {
+            return { dueAt: undefined, dueScore: 0 };
+        }
+
+        if (typeof currentDueAt !== 'number') {
+            return {
+                dueAt: incomingDueAt,
+                dueScore: incomingDueScore,
+            };
+        }
+
+        if (typeof incomingDueAt !== 'number') {
+            return {
+                dueAt: currentDueAt,
+                dueScore: currentDueScore,
+            };
+        }
+
+        if (incomingDueScore > currentDueScore) {
+            return {
+                dueAt: incomingDueAt,
+                dueScore: incomingDueScore,
+            };
+        }
+
+        if (currentDueScore > incomingDueScore) {
+            return {
+                dueAt: currentDueAt,
+                dueScore: currentDueScore,
+            };
+        }
+
+        if (incomingDueAt >= currentDueAt) {
+            return {
+                dueAt: incomingDueAt,
+                dueScore: incomingDueScore,
+            };
+        }
+
+        return {
+            dueAt: currentDueAt,
+            dueScore: currentDueScore,
+        };
+    };
+
     E.extractProgressPercent = function extractProgressPercent(text) {
         const match = E.cleanText(text).match(/(\d{1,3})\s*%/);
         if (!match) return undefined;
@@ -207,24 +314,7 @@
     };
 
     E.pickDueAtFromTexts = function pickDueAtFromTexts(texts) {
-        if (!Array.isArray(texts) || !texts.length) return undefined;
-
-        const high = [];
-        const normal = [];
-
-        for (const text of texts) {
-            const dueAt = E.parseDueAt(text);
-            if (!dueAt) continue;
-
-            normal.push(dueAt);
-            if (/(마감|종료|제출|due|until|deadline|end)/i.test(text)) {
-                high.push(dueAt);
-            }
-        }
-
-        if (high.length) return Math.max(...high);
-        if (normal.length) return Math.max(...normal);
-        return undefined;
+        return E.pickDueSignalFromTexts(texts)?.dueAt;
     };
 
     E.pickMetaFromTexts = function pickMetaFromTexts(texts) {
@@ -260,8 +350,8 @@
         if (!dueAt) return 'INFO';
         const now = Date.now();
         const diff = dueAt - now;
+        if (diff < 0) return '마감';
         const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        if (days < 0) return '마감';
         if (days === 0) return 'D-DAY';
         return `D-${days}`;
     };

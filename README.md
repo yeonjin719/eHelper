@@ -1,6 +1,6 @@
-# SMU eCampus Dashboard
+# eHelper
 
-SMU eCampus 페이지에서 과목별 학습 항목(과제/강의/토론/자료/공지)을 한눈에 관리할 수 있도록 우측 대시보드 패널과 VOD 보조 기능을 제공하는 Chrome Extension입니다.
+eCampus 페이지에서 과목별 학습 항목(과제/강의/토론/자료/공지)을 한눈에 관리할 수 있도록 우측 대시보드 패널과 VOD 보조 기능을 제공하는 Chrome Extension입니다.
 
 ## 주요 기능
 
@@ -23,7 +23,6 @@ SMU eCampus 페이지에서 과목별 학습 항목(과제/강의/토론/자료/
 ## 권한(Manifest)
 
 - `storage`: UI 상태/설정 저장
-- `tabs`: 팝업에서 eCampus 탭 이동
 - `downloads`: 자료/영상 파일 다운로드
 - `host_permissions`: `https://ecampus.smu.ac.kr/*`
 
@@ -114,23 +113,23 @@ npm run build
 
 1. `src/content/modules/school.adapter.{학교}.ts` 파일을 추가합니다.
 2. `registerSchoolAdapter`로 아래 핸들러를 구현합니다.
-   - `match`
-   - `isDashboardPage`
-   - `collectDashboardCourses`
-   - `crawlAllDashboardItems`
-   - `getCurrentCourse`
-   - `isProgressPage` (선택)
-   - `collectProgressPageItems` (선택)
+    - `match`
+    - `isDashboardPage`
+    - `collectDashboardCourses`
+    - `crawlAllDashboardItems`
+    - `getCurrentCourse`
+    - `isProgressPage` (선택)
+    - `collectProgressPageItems` (선택)
 3. `src/content/index.ts`에 새 어댑터 모듈을 import 합니다.
 4. 필요 시 `manifest.json`의 `host_permissions`를 학교 도메인으로 확장합니다.
 
 ## 문제 해결
 
 - 다운로드 버튼 클릭 시 새 탭만 열리면:
-  - 최신 빌드(`npm run build`) 후 확장프로그램을 재로드했는지 확인
-  - `downloads` 권한이 반영된 `dist/manifest.json`으로 로드됐는지 확인
+    - 최신 빌드(`npm run build`) 후 확장프로그램을 재로드했는지 확인
+    - `downloads` 권한이 반영된 `dist/manifest.json`으로 로드됐는지 확인
 - UI가 갱신되지 않으면:
-  - `dist/`를 다시 빌드하고 확장프로그램 새로고침
+    - `dist/`를 다시 빌드하고 확장프로그램 새로고침
 
 ## 라이선스
 
