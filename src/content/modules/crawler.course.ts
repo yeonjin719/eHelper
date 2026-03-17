@@ -187,7 +187,7 @@
     };
 
     E.normalizeCourseCache = function normalizeCourseCache(courses) {
-        const normalized = (Array.isArray(courses) ? courses : [])
+        return (Array.isArray(courses) ? courses : [])
             .map((course) => {
                 const courseLabels = Array.isArray(course?.courseLabels)
                     ? course.courseLabels
@@ -211,27 +211,6 @@
                 };
             })
             .filter((course) => course.courseId);
-
-        const byCourseId = new Map(
-            normalized.map((course) => [String(course.courseId), course]),
-        );
-
-        // 테스트 중인 퀴즈 인덱스 과목을 대시보드/캐시 흐름에 항상 포함한다.
-        for (const forcedCourse of FORCED_DEBUG_COURSES) {
-            const courseId = String(forcedCourse.courseId);
-            if (byCourseId.has(courseId)) continue;
-            byCourseId.set(courseId, {
-                courseId,
-                courseName: E.cleanCourseDisplayName(forcedCourse.courseName),
-                courseLabels: Array.isArray(forcedCourse.courseLabels)
-                    ? forcedCourse.courseLabels
-                    : [],
-                isSmClass: Boolean(forcedCourse.isSmClass),
-                isNew: Boolean(forcedCourse.isNew),
-            });
-        }
-
-        return [...byCourseId.values()];
     };
 
     E.getCourseCacheSignature = function getCourseCacheSignature(courses) {

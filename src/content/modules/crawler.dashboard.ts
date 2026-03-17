@@ -11,7 +11,7 @@
 
             E.setBadge?.('CRAWL');
             E.setSub?.(
-                `과목 ${courses.length}개에서 과제/강의/토론/자료 정보를 가져오는 중…`,
+                `과목 ${courses.length}개에서 과제/퀴즈/강의/토론/자료 정보를 가져오는 중…`,
             );
 
             const perCourse = await E.mapWithConcurrency(
