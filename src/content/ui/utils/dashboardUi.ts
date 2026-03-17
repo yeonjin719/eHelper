@@ -313,10 +313,7 @@ export function stateBadgeClass(
     }
 
     if (typeof dueAt === 'number') {
-        if (dueAt < now) {
-            return 'bg-rose-50 text-rose-600 ring-1 ring-rose-100';
-        }
-        if (dueAt <= in3days) {
+        if (dueAt >= now && dueAt <= in3days) {
             return 'bg-amber-50 text-amber-600 ring-1 ring-amber-100';
         }
     }
@@ -326,16 +323,16 @@ export function stateBadgeClass(
 
 export function itemCardToneClass(type: ItemType) {
     if (type === 'ASSIGNMENT')
-        return 'border-zinc-200 border-l-[3px] border-l-rose-200 bg-white hover:border-rose-100 hover:bg-rose-50/35';
+        return 'border-solid border-zinc-200 border-l-[3px] border-l-rose-200 bg-white hover:border-rose-100 hover:bg-rose-50/35';
     if (type === 'LECTURE')
-        return 'border-zinc-200 border-l-[3px] border-l-sky-200 bg-white hover:border-sky-100 hover:bg-sky-50/35';
+        return 'border-solid border-zinc-200 border-l-[3px] border-l-sky-200 bg-white hover:border-sky-100 hover:bg-sky-50/35';
     if (type === 'FORUM')
-        return 'border-zinc-200 border-l-[3px] border-l-amber-200 bg-white hover:border-amber-100 hover:bg-amber-50/35';
+        return 'border-solid border-zinc-200 border-l-[3px] border-l-amber-200 bg-white hover:border-amber-100 hover:bg-amber-50/35';
     if (type === 'RESOURCE')
-        return 'border-zinc-200 border-l-[3px] border-l-emerald-200 bg-white hover:border-emerald-100 hover:bg-emerald-50/35';
+        return 'border-solid border-zinc-200 border-l-[3px] border-l-emerald-200 bg-white hover:border-emerald-100 hover:bg-emerald-50/35';
     if (type === 'NOTICE')
-        return 'border-zinc-200 border-l-[3px] border-l-violet-200 bg-white hover:border-violet-100 hover:bg-violet-50/35';
-    return 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50';
+        return 'border-solid border-zinc-200 border-l-[3px] border-l-violet-200 bg-white hover:border-violet-100 hover:bg-violet-50/35';
+    return 'border-solid border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50';
 }
 
 export function ddayBadgeClass(dueAt?: number) {
@@ -485,7 +482,11 @@ export function selectFilteredItems(state: UiState) {
             }
 
             if (filterValue === 'OVERDUE') {
-                return item.dueAt != null && item.dueAt < now;
+                return (
+                    item.status === 'TODO' &&
+                    item.dueAt != null &&
+                    item.dueAt < now
+                );
             }
 
             if (filterValue === 'TODO_ONLY') {
@@ -493,7 +494,12 @@ export function selectFilteredItems(state: UiState) {
             }
 
             if (filterValue === 'NOT_DONE') {
-                return item.type !== 'NOTICE' && item.status !== 'DONE';
+                return (
+                    (item.type === 'ASSIGNMENT' ||
+                        item.type === 'LECTURE' ||
+                        item.type === 'FORUM') &&
+                    item.status !== 'DONE'
+                );
             }
 
             return false;

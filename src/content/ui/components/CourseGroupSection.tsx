@@ -31,6 +31,7 @@ export function CourseGroupSection({
     const overdueCount = items.filter(
         (item) =>
             item.type !== 'NOTICE' &&
+            item.status === 'TODO' &&
             typeof item.dueAt === 'number' &&
             item.dueAt < now,
     ).length;
@@ -44,7 +45,7 @@ export function CourseGroupSection({
         <article className="mb-3 p-4 last:mb-0 bg-white rounded-xl shadow-sm">
             <button
                 type="button"
-                className="mb-2 flex w-full items-center justify-between rounded-xl border-none px-3 py-2 text-left text-[12px] text-zinc-600"
+                className="mb-2 flex w-full items-center justify-between rounded-xl border-none bg-transparent px-3 py-2 text-left text-[12px] text-zinc-600 hover:bg-transparent active:bg-transparent"
                 aria-expanded={isOpen}
                 onClick={onToggle}
             >

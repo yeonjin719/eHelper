@@ -10,15 +10,15 @@ export const DASHBOARD_SHELL_STYLES = {
     iconButton:
         'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-[15px] font-semibold leading-none text-zinc-600 transition hover:border-zinc-300 hover:bg-white hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
     iconButtonBusy:
-        'cursor-wait border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700',
+        'cursor-wait border-zinc-300 bg-zinc-100 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-700',
     loadingChip:
-        'inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700',
+        'inline-flex items-center rounded-full border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-700',
     loadingStatus:
-        'mt-2 flex items-start gap-2 rounded-xl border border-sky-200 bg-[linear-gradient(135deg,rgba(240,249,255,0.98),rgba(236,253,245,0.92))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
+        'mt-2 flex items-start gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2',
     loadingStatusSpinner:
-        'mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-sky-200 border-t-sky-600',
-    loadingStatusTitle: 'text-[12px] font-semibold tracking-tight text-sky-900',
-    loadingStatusText: 'mt-0.5 text-[11px] leading-4 text-sky-700',
+        'mt-0.5 h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-solid border-sky-200 border-t-sky-600',
+    loadingStatusTitle: 'text-[12px] font-semibold tracking-tight text-zinc-900',
+    loadingStatusText: 'mt-0.5 text-[11px] leading-4 text-zinc-700',
     contentLayout: 'flex min-h-0 flex-1 flex-col',
     filterSection: 'space-y-2 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3',
     filterSelectGrid: 'grid grid-cols-2 gap-2',
@@ -27,8 +27,10 @@ export const DASHBOARD_SHELL_STYLES = {
     filterChipRow: 'flex flex-wrap items-center gap-1.5',
     filterChipBase:
         'inline-flex h-8 items-center rounded-full border px-3 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
-    filterChipActive: 'border-sky-300 bg-sky-50 text-sky-700',
-    filterChipInactive: 'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50',
+    filterChipActive:
+        'border-sky-300 bg-sky-50 text-sky-700 focus:bg-sky-50 focus:border-sky-300 focus:text-sky-700 active:bg-sky-50',
+    filterChipInactive:
+        'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50 focus:bg-white focus:border-zinc-200 focus:text-zinc-600 active:bg-white',
     list: 'ecdash-scroll min-h-0 max-h-[50vh] flex-1 overflow-y-auto bg-[#f9fafb] px-4 py-3',
     footer:
         'flex items-center justify-between border-t border-zinc-100 bg-white px-4 py-2 text-[12px] text-zinc-500',

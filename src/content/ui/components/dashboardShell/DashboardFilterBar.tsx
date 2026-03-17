@@ -39,6 +39,7 @@ export function DashboardFilterBar({
 }: DashboardFilterBarProps) {
     const selectedDueFilter = filter[0] || 'ALL';
     const typeFilterSet = new Set(typeFilter);
+    const isNotDoneFilterActive = selectedDueFilter === 'NOT_DONE';
 
     return (
         <div className={styles.filterSection}>
@@ -91,6 +92,23 @@ export function DashboardFilterBar({
                     }}
                 >
                     전체
+                </button>
+
+                <button
+                    type="button"
+                    className={[
+                        styles.filterChipBase,
+                        isNotDoneFilterActive
+                            ? styles.filterChipActive
+                            : styles.filterChipInactive,
+                    ].join(' ')}
+                    onClick={() => {
+                        onFilterChange(
+                            isNotDoneFilterActive ? [] : ['NOT_DONE'],
+                        );
+                    }}
+                >
+                    미완료
                 </button>
 
                 {TYPE_FILTER_OPTIONS.map((option) => (

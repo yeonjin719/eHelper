@@ -247,6 +247,17 @@
   color: inherit;
 }
 
+#ecdash-root button {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: none;
+  box-shadow: none;
+}
+
+#ecdash-root button:active {
+  box-shadow: none;
+}
+
 #ecdash-root :is(button, a, select, input[type='checkbox']) {
   -webkit-tap-highlight-color: transparent;
 }

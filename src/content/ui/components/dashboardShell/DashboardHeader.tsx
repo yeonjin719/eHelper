@@ -13,7 +13,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({
     collapsed,
     isLoading,
-    loadingMessage,
+    loadingMessage: _loadingMessage,
     showSettingsButton,
     onToggleCollapsed,
     onRefresh,
@@ -45,11 +45,6 @@ export function DashboardHeader({
                             <h1 className="truncate m-0 text-[15px] font-bold tracking-tight text-zinc-900">
                                 eHelper
                             </h1>
-                            {isLoading && (
-                                <span className={styles.loadingChip}>
-                                    동기화 중
-                                </span>
-                            )}
                         </div>
                         <div className="flex h-fit w-fit items-center gap-1.5">
                             <button
@@ -67,14 +62,7 @@ export function DashboardHeader({
                                 disabled={isLoading}
                                 onClick={onRefresh}
                             >
-                                {isLoading ? (
-                                    <span
-                                        className="h-4 w-4 animate-spin rounded-full border-2 border-sky-200 border-t-sky-700"
-                                        aria-hidden="true"
-                                    />
-                                ) : (
-                                    '↻'
-                                )}
+                                ↻
                             </button>
 
                             {showSettingsButton && (
@@ -103,28 +91,6 @@ export function DashboardHeader({
                             </button>
                         </div>
                     </div>
-
-                    {isLoading && (
-                        <div
-                            className={styles.loadingStatus}
-                            role="status"
-                            aria-live="polite"
-                        >
-                            <span
-                                className={styles.loadingStatusSpinner}
-                                aria-hidden="true"
-                            />
-                            <div className="min-w-0">
-                                <div className={styles.loadingStatusTitle}>
-                                    새로고침 중
-                                </div>
-                                <div className={styles.loadingStatusText}>
-                                    {loadingMessage ||
-                                        '최신 항목을 다시 불러오는 중...'}
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
         </header>
