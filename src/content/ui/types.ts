@@ -1,4 +1,10 @@
-export type ItemType = 'ASSIGNMENT' | 'LECTURE' | 'FORUM' | 'RESOURCE' | 'NOTICE';
+export type ItemType =
+    | 'ASSIGNMENT'
+    | 'QUIZ'
+    | 'LECTURE'
+    | 'FORUM'
+    | 'RESOURCE'
+    | 'NOTICE';
 export type ItemStatus = 'TODO' | 'DONE' | 'UNKNOWN';
 export type FilterValue = 'DUE_SOON' | 'OVERDUE' | 'TODO_ONLY' | 'NOT_DONE';
 export type TypeFilterValue = ItemType;

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DashboardItem, DashboardRuntime } from '../types';
+import { isOverdueItem } from '../utils/dashboardUi';
 import { DashboardItemCard } from './DashboardItemCard';
 
 interface CourseGroupSectionProps {
@@ -29,11 +30,7 @@ export function CourseGroupSection({
             item.dueAt <= dueSoonThreshold,
     ).length;
     const overdueCount = items.filter(
-        (item) =>
-            item.type !== 'NOTICE' &&
-            item.status === 'TODO' &&
-            typeof item.dueAt === 'number' &&
-            item.dueAt < now,
+        (item) => isOverdueItem(item, now),
     ).length;
     const isNewCourse = items.some(
         (item) =>

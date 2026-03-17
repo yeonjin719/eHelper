@@ -142,6 +142,104 @@
         };
     };
 
+    E.extractQuizMetaFromDoc = function extractQuizMetaFromDoc(doc) {
+        const detail = E.extractDueMetaFromDoc(doc);
+        const rows = E.collectSummaryRowsFromDoc(doc, [
+            '.quizinfo tr',
+            '.quizreviewsummary tr',
+            '.quizattemptsummary tr',
+            '.quizsummaryofattempts tr',
+            '.generaltable tr',
+        ]);
+
+        let openText = '';
+        let dueText = '';
+        let gradeText = '';
+
+        for (const row of rows) {
+            const label = E.cleanText(row.label);
+            const value = E.cleanText(row.value);
+            if (!label || !value) continue;
+
+            if (
+                !openText &&
+                /(시작|개시|열림|open(?:ed)?|available\s*from|quiz\s*opens?)/i.test(
+                    label,
+                )
+            ) {
+                openText = value;
+                continue;
+            }
+
+            if (
+                !dueText &&
+                /(마감|종료|close(?:s|d)?|due(?:\s*date)?|until|quiz\s*close)/i.test(
+                    label,
+                )
+            ) {
+                dueText = value;
+                continue;
+            }
+
+            if (
+                !gradeText &&
+                /(성적|점수|grade|marks?|final\s*grade)/i.test(label)
+            ) {
+                gradeText = value;
+            }
+        }
+
+        const activityTexts = E.collectTextBySelectors(doc, [
+            '.quizinfo',
+            '.quizattempt',
+            '.quizsummaryofattempts',
+            '.activity-information',
+            '.description',
+        ]);
+        let normalizedGradeText = E.normalizeQuizGradeText(gradeText);
+        if (!normalizedGradeText) {
+            for (const text of activityTexts) {
+                normalizedGradeText = E.normalizeQuizGradeText(text);
+                if (normalizedGradeText) break;
+            }
+        }
+        const attemptSignalText =
+            activityTexts.find((text) =>
+                /(미응시|응시\s*완료|not\s*attempted|graded|review)/i.test(text),
+            ) || '';
+        const dueSignal = E.pickDueSignalFromTexts(
+            [
+                openText && `시작 ${openText}`,
+                dueText && `마감 ${dueText}`,
+                openText && dueText && `기간 ${openText} ~ ${dueText}`,
+            ].filter(Boolean),
+        );
+        const dueInfo = E.pickPreferredDueInfo(
+            {
+                dueAt: dueSignal?.dueAt,
+                dueScore: dueSignal?.dueScore || 0,
+            },
+            detail,
+        );
+        const periodMeta =
+            openText && dueText ? `기간: ${openText} ~ ${dueText}` : undefined;
+        const meta = E.mergeMetaText(
+            E.mergeMetaText(normalizedGradeText, periodMeta),
+            detail.meta,
+        );
+
+        return {
+            dueAt: dueInfo.dueAt,
+            dueScore: dueInfo.dueScore,
+            status:
+                E.inferQuizStatusFromText(
+                    normalizedGradeText || attemptSignalText || gradeText,
+                ) ||
+                'UNKNOWN',
+            meta,
+        };
+    };
+
     // 포럼 본문 문구를 기반으로 참여 상태를 추론한다.
     E.inferForumParticipationStatus = function inferForumParticipationStatus(
         doc,
@@ -224,6 +322,29 @@
                     item.url,
                     err,
                 );
+                return item;
+            }
+        });
+    };
+
+    E.enrichQuizItems = async function enrichQuizItems(items, limit = 1) {
+        return await E.mapWithConcurrency(items, limit, async (item) => {
+            try {
+                const html = await E.fetchHtml(item.url);
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const detail = E.extractQuizMetaFromDoc(doc);
+                const dueInfo = E.pickPreferredDueInfo(item, detail);
+
+                return {
+                    ...item,
+                    dueAt: dueInfo.dueAt,
+                    dueScore: dueInfo.dueScore,
+                    status:
+                        detail.status !== 'UNKNOWN' ? detail.status : item.status,
+                    meta: E.mergeMetaText(item.meta, detail.meta),
+                };
+            } catch (err) {
+                console.warn('[ECDASH] quiz detail crawl failed:', item.url, err);
                 return item;
             }
         });

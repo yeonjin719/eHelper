@@ -10,6 +10,7 @@
         // 과목 단위 크롤링은 "과목 페이지 허브 + 상세 보고서 보강 + 과제 인덱스"를 합산.
         const all = [];
         let assignmentFallbackItems = [];
+        let quizFallbackItems = [];
         const normalizedCourseName =
             (typeof E.cleanCourseDisplayName === 'function'
                 ? E.cleanCourseDisplayName(courseName)
@@ -38,6 +39,7 @@
             assignmentFallbackItems = moduleItems.filter(
                 (it) => it.type === 'ASSIGNMENT',
             );
+            quizFallbackItems = moduleItems.filter((it) => it.type === 'QUIZ');
             let lectureLinkCandidates =
                 E.collectActivityLinkCandidatesFromCourseView(courseDoc);
 
@@ -264,6 +266,50 @@
                 all.push(...enrichedAssignments);
                 console.debug(
                     `[ECDASH] assignment fallback used from course view. courseId=${courseId} count=${assignmentFallbackItems.length}`,
+                );
+            }
+        }
+
+        try {
+            const quizHtml = await E.fetchHtml(`/mod/quiz/index.php?id=${courseId}`);
+            const quizItems = E.parseQuizIndexHtml(
+                quizHtml,
+                courseId,
+                normalizedCourseName,
+                normalizedCourseIsNew,
+            );
+            if (quizItems.length) {
+                const enrichedQuizzes = await E.enrichQuizItems(quizItems, 1);
+                all.push(...enrichedQuizzes);
+            } else if (quizFallbackItems.length) {
+                const enrichedQuizzes = await E.enrichQuizItems(
+                    quizFallbackItems,
+                    1,
+                );
+                all.push(...enrichedQuizzes);
+                console.debug(
+                    `[ECDASH] quiz index empty. using course-view fallback. courseId=${courseId} count=${quizFallbackItems.length}`,
+                );
+            }
+        } catch (err) {
+            const msg = String(err?.message || err || '');
+            const is404 = msg.includes('Fetch failed 404');
+
+            if (!is404) {
+                console.warn(
+                    `[ECDASH] quiz crawl failed. courseId=${courseId} (${normalizedCourseName})`,
+                    err,
+                );
+            }
+
+            if (quizFallbackItems.length) {
+                const enrichedQuizzes = await E.enrichQuizItems(
+                    quizFallbackItems,
+                    1,
+                );
+                all.push(...enrichedQuizzes);
+                console.debug(
+                    `[ECDASH] quiz fallback used from course view. courseId=${courseId} count=${quizFallbackItems.length}`,
                 );
             }
         }

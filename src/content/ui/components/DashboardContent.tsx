@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DashboardItem, DashboardRuntime } from '../types';
+import { isOverdueItem } from '../utils/dashboardUi';
 import { CourseGroupSection } from './CourseGroupSection';
 
 interface DashboardContentProps {
@@ -84,11 +85,7 @@ export function DashboardContent({
             item.dueAt <= dueSoonThreshold,
     ).length;
     const overdueCount = filteredItems.filter(
-        (item) =>
-            item.type !== 'NOTICE' &&
-            item.status === 'TODO' &&
-            typeof item.dueAt === 'number' &&
-            item.dueAt < now,
+        (item) => isOverdueItem(item, now),
     ).length;
     const shouldShowLoadingOverlay = loading && hasItems;
     const loadingMessageLines = splitLoadingMessage(

@@ -2,7 +2,6 @@
 (() => {
     const E = window.__ECDASH__;
     if (!E) return;
-
     // 대시보드 과목 수집 + 과목 캐시 + 공통 크롤링 입출력.
     E.isDashboardSMU = function isDashboardSMU(doc = document) {
         return doc?.querySelector?.('ul.my-course-lists') != null;
@@ -62,8 +61,9 @@
         if (!courseLinkEl) return false;
 
         const badgeText = E.cleanText(
-            courseLinkEl.querySelector('.course-title h3 .new, .course-title .new')
-                ?.textContent,
+            courseLinkEl.querySelector(
+                '.course-title h3 .new, .course-title .new',
+            )?.textContent,
         );
         if (badgeText) {
             return /\bnew\b/i.test(badgeText);
@@ -75,7 +75,9 @@
         return /\bnew\b/i.test(titleText);
     };
 
-    E.extractCourseNameFromLink = function extractCourseNameFromLink(courseLinkEl) {
+    E.extractCourseNameFromLink = function extractCourseNameFromLink(
+        courseLinkEl,
+    ) {
         if (!courseLinkEl) return '';
 
         const h3 = courseLinkEl.querySelector('.course-title h3');
@@ -90,7 +92,8 @@
         }
 
         return E.cleanCourseDisplayName(
-            E.cleanText(h3?.textContent) || E.cleanText(courseLinkEl.textContent),
+            E.cleanText(h3?.textContent) ||
+                E.cleanText(courseLinkEl.textContent),
         );
     };
 
@@ -99,13 +102,18 @@
         if (course.isSmClass === true) return true;
 
         if (Array.isArray(course.courseLabels)) {
-            return course.courseLabels.some((label) => E.hasSmClassLabel(label));
+            return course.courseLabels.some((label) =>
+                E.hasSmClassLabel(label),
+            );
         }
 
         return false;
     };
 
-    E.filterSmClassCourses = function filterSmClassCourses(courses, includeSmClass) {
+    E.filterSmClassCourses = function filterSmClassCourses(
+        courses,
+        includeSmClass,
+    ) {
         const normalized = E.normalizeCourseCache(courses);
         if (includeSmClass) {
             return {
@@ -142,10 +150,7 @@
 
             for (const a of links) {
                 try {
-                    const href =
-                        a.getAttribute?.('href') ||
-                        a.href ||
-                        '';
+                    const href = a.getAttribute?.('href') || a.href || '';
                     const u = new URL(href, location.origin);
                     const courseId = u.searchParams.get('id');
                     if (!courseId || seen.has(courseId)) continue;
@@ -157,8 +162,7 @@
                     const isNew = E.detectCourseTitleHasNewBadge(a);
 
                     const courseName =
-                        E.extractCourseNameFromLink(a) ||
-                        `course-${courseId}`;
+                        E.extractCourseNameFromLink(a) || `course-${courseId}`;
 
                     seen.add(courseId);
                     courses.push({
@@ -176,15 +180,14 @@
             return courses;
         };
 
-    E.collectCoursesFromDashboardSMU =
-        function collectCoursesFromDashboardSMU(doc = document) {
-            return E.collectCoursesFromDashboardDocumentSMU(doc);
-        };
+    E.collectCoursesFromDashboardSMU = function collectCoursesFromDashboardSMU(
+        doc = document,
+    ) {
+        return E.collectCoursesFromDashboardDocumentSMU(doc);
+    };
 
     E.normalizeCourseCache = function normalizeCourseCache(courses) {
-        if (!Array.isArray(courses) || !courses.length) return [];
-
-        return courses
+        const normalized = (Array.isArray(courses) ? courses : [])
             .map((course) => {
                 const courseLabels = Array.isArray(course?.courseLabels)
                     ? course.courseLabels
@@ -208,12 +211,35 @@
                 };
             })
             .filter((course) => course.courseId);
+
+        const byCourseId = new Map(
+            normalized.map((course) => [String(course.courseId), course]),
+        );
+
+        // 테스트 중인 퀴즈 인덱스 과목을 대시보드/캐시 흐름에 항상 포함한다.
+        for (const forcedCourse of FORCED_DEBUG_COURSES) {
+            const courseId = String(forcedCourse.courseId);
+            if (byCourseId.has(courseId)) continue;
+            byCourseId.set(courseId, {
+                courseId,
+                courseName: E.cleanCourseDisplayName(forcedCourse.courseName),
+                courseLabels: Array.isArray(forcedCourse.courseLabels)
+                    ? forcedCourse.courseLabels
+                    : [],
+                isSmClass: Boolean(forcedCourse.isSmClass),
+                isNew: Boolean(forcedCourse.isNew),
+            });
+        }
+
+        return [...byCourseId.values()];
     };
 
     E.getCourseCacheSignature = function getCourseCacheSignature(courses) {
         const normalized = E.normalizeCourseCache(courses)
             .slice()
-            .sort((a, b) => String(a.courseId).localeCompare(String(b.courseId)));
+            .sort((a, b) =>
+                String(a.courseId).localeCompare(String(b.courseId)),
+            );
 
         return normalized
             .map(
@@ -267,7 +293,9 @@
 
             return {
                 courses,
-                lastSyncAt: Number(res?.[E.constants.STORAGE_COURSES_LAST_SYNC] || 0),
+                lastSyncAt: Number(
+                    res?.[E.constants.STORAGE_COURSES_LAST_SYNC] || 0,
+                ),
             };
         } catch (_) {
             return { courses: [], lastSyncAt: 0 };
@@ -352,7 +380,8 @@
                     credentials: 'include',
                     cache: 'no-store',
                 });
-                if (!res.ok) throw new Error(`Fetch failed ${res.status}: ${url}`);
+                if (!res.ok)
+                    throw new Error(`Fetch failed ${res.status}: ${url}`);
                 return await res.text();
             } catch (err) {
                 lastErr = err;
@@ -390,6 +419,10 @@
     ) {
         const doc = new DOMParser().parseFromString(htmlText, 'text/html');
         const items = [];
+        const indexUrl = new URL(
+            `/mod/assign/index.php?id=${courseId}`,
+            location.origin,
+        ).toString();
 
         doc.querySelectorAll(
             'table.generaltable.table.table-bordered tbody tr',
@@ -398,7 +431,10 @@
 
             const a = tr.querySelector('td.c1 a');
             const title = E.cleanText(a?.textContent);
-            const url = E.normalizeUrl(a?.href || '');
+            const url = E.resolveUrl(
+                a?.getAttribute('href') || a?.href || '',
+                indexUrl,
+            );
             if (!title || !url) return;
 
             const section =
@@ -427,10 +463,78 @@
                 url,
                 section,
                 dueAt,
+                dueScore: typeof dueAt === 'number' ? 3 : 0,
                 status,
                 meta:
                     normalizedSubmitText ||
                     (submitText && submitText !== '-' ? submitText : undefined),
+            });
+        });
+
+        return items;
+    };
+
+    E.parseQuizIndexHtml = function parseQuizIndexHtml(
+        htmlText,
+        courseId,
+        courseName,
+        courseIsNew = false,
+    ) {
+        const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+        const items = [];
+        const indexUrl = new URL(
+            `/mod/quiz/index.php?id=${courseId}`,
+            location.origin,
+        ).toString();
+
+        doc.querySelectorAll(
+            'table.generaltable.table.table-bordered tbody tr, table.generaltable tbody tr',
+        ).forEach((tr) => {
+            if (tr.querySelector('.tabledivider')) return;
+
+            const a = tr.querySelector('td.c1 a, td:nth-child(2) a');
+            const title = E.cleanText(a?.textContent);
+            const url = E.resolveUrl(
+                a?.getAttribute('href') || a?.href || '',
+                indexUrl,
+            );
+            if (!title || !url) return;
+
+            const section =
+                E.cleanText(
+                    tr.querySelector('td.c0, td:nth-child(1)')?.textContent,
+                ) || undefined;
+            const dueText =
+                E.cleanText(
+                    tr.querySelector('td.c2, td:nth-child(3)')?.textContent,
+                ) || '';
+            const gradeText =
+                E.cleanText(
+                    tr.querySelector('td.c3, td:nth-child(4)')?.textContent,
+                ) || '';
+            const normalizedGradeText = E.normalizeQuizGradeText(gradeText);
+            const dueAt =
+                dueText && dueText !== '-' ? E.parseDueAt(dueText) : undefined;
+            const inferredStatus = E.inferQuizStatusFromText(
+                normalizedGradeText || gradeText,
+            );
+
+            items.push({
+                id: E.makeId('QUIZ', courseId, title, url),
+                type: 'QUIZ',
+                courseId,
+                courseName,
+                courseIsNew: Boolean(courseIsNew),
+                title,
+                url,
+                section,
+                dueAt,
+                dueScore: typeof dueAt === 'number' ? 3 : 0,
+                status:
+                    inferredStatus === 'UNKNOWN' && !normalizedGradeText
+                        ? 'TODO'
+                        : inferredStatus,
+                meta: normalizedGradeText || undefined,
             });
         });
 

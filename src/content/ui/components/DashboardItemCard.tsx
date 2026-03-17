@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DashboardItem, DashboardRuntime } from '../types';
 import {
+    getEffectiveItemStatus,
     itemCardToneClass,
     stateBadgeClass,
     splitMetaByPeriod,
@@ -14,6 +15,7 @@ import {
     MdOutlineFolderOpen,
     MdOutlineForum,
     MdOutlinePlayCircleOutline,
+    MdOutlineQuiz,
     MdOutlineVisibilityOff,
 } from 'react-icons/md';
 interface DashboardItemCardProps {
@@ -25,6 +27,7 @@ interface DashboardItemCardProps {
 function TypeBadgeIcon({ type }: { type: DashboardItem['type'] }) {
     if (type === 'ASSIGNMENT')
         return <MdOutlineAssignment aria-hidden="true" />;
+    if (type === 'QUIZ') return <MdOutlineQuiz aria-hidden="true" />;
     if (type === 'LECTURE')
         return <MdOutlinePlayCircleOutline aria-hidden="true" />;
     if (type === 'FORUM') return <MdOutlineForum aria-hidden="true" />;
@@ -106,6 +109,30 @@ function getAssignmentBadgeText(
     return '제출 확인필요';
 }
 
+function getQuizBadgeText(item: DashboardItem, normalizedStatusText: string) {
+    const metaLines = uniqueMetaLines(item.meta || '');
+    const gradeLine =
+        metaLines.find((line) => /^(?:성적|grade)\s*[:：]/i.test(line)) || '';
+
+    if (gradeLine) {
+        return gradeLine;
+    }
+
+    if (item.status === 'DONE' || normalizedStatusText === '완료') {
+        return '응시 완료';
+    }
+
+    if (typeof item.dueAt === 'number') {
+        return `마감 ${formatDueDate(item.dueAt)}`;
+    }
+
+    if (item.status === 'TODO' || /미완료/.test(normalizedStatusText)) {
+        return '미응시';
+    }
+
+    return '응시 확인필요';
+}
+
 function extractAssignmentDeadlineLine(
     dueAt: number | undefined,
     periodText: string,
@@ -137,11 +164,12 @@ export function DashboardItemCard({
     onHideItem,
 }: DashboardItemCardProps) {
     const { detailText, periodText } = splitMetaByPeriod(item.meta, item.type);
+    const effectiveStatus = getEffectiveItemStatus(item);
     const rawDdayText = item.dueAt ? runtime.ddayLabel?.(item.dueAt) || '' : '';
     const ddayText =
-        rawDdayText === '마감' && item.status !== 'TODO' ? '' : rawDdayText;
+        rawDdayText === '마감' && effectiveStatus !== 'TODO' ? '' : rawDdayText;
     const statusTextRaw = String(
-        runtime.statusLabel?.(item.status) || item.status,
+        runtime.statusLabel?.(effectiveStatus) || effectiveStatus,
     );
     const normalizedStatusText = /상태\s*미상|unknown/i.test(statusTextRaw)
         ? '확인필요'
@@ -150,12 +178,22 @@ export function DashboardItemCard({
         item.type === 'ASSIGNMENT'
             ? getAssignmentBadgeText(item, normalizedStatusText)
             : '';
+    const quizBadgeText =
+        item.type === 'QUIZ' ? getQuizBadgeText(item, normalizedStatusText) : '';
     const unifiedStateText =
         item.type === 'NOTICE'
             ? ''
             : item.type === 'ASSIGNMENT'
               ? assignmentBadgeText
+              : item.type === 'QUIZ'
+                ? quizBadgeText
             : [ddayText, normalizedStatusText].filter(Boolean).join(' · ');
+    const primaryBadgeMetaText =
+        item.type === 'ASSIGNMENT'
+            ? assignmentBadgeText
+            : item.type === 'QUIZ'
+              ? quizBadgeText
+              : '';
 
     const detailMetaLines = uniqueMetaLines(
         [detailText]
@@ -177,9 +215,9 @@ export function DashboardItemCard({
         .filter(
             (line) =>
                 !(
-                    item.type === 'ASSIGNMENT' &&
-                    assignmentBadgeText &&
-                    normalizeMetaKey(line) === normalizeMetaKey(assignmentBadgeText)
+                    (item.type === 'ASSIGNMENT' || item.type === 'QUIZ') &&
+                    primaryBadgeMetaText &&
+                    normalizeMetaKey(line) === normalizeMetaKey(primaryBadgeMetaText)
                 ),
         );
     const rawPeriodMetaLines = uniqueMetaLines(
@@ -189,14 +227,16 @@ export function DashboardItemCard({
             .join(' · '),
     );
     const periodMetaLines =
-        item.type === 'ASSIGNMENT' ? [] : rawPeriodMetaLines;
+        item.type === 'ASSIGNMENT' || item.type === 'QUIZ'
+            ? []
+            : rawPeriodMetaLines;
     const metaLineKeys = new Set(
         [...detailMetaLines, ...periodMetaLines].map((line) =>
             normalizeMetaKey(line),
         ),
     );
     const assignmentDeadlineLine =
-        item.type === 'ASSIGNMENT'
+        item.type === 'ASSIGNMENT' || item.type === 'QUIZ'
             ? extractAssignmentDeadlineLine(item.dueAt, periodText)
             : '';
     const extraMetaLines =
@@ -245,7 +285,7 @@ export function DashboardItemCard({
                                     'inline-flex self-start rounded-md px-2 py-0.5 text-[12px] font-semibold',
                                     stateBadgeClass(
                                         runtime,
-                                        item.status,
+                                        effectiveStatus,
                                         item.dueAt,
                                     ),
                                 ].join(' ')}

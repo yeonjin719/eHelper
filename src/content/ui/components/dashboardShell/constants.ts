@@ -10,6 +10,7 @@ export const DUE_FILTER_OPTIONS: DashboardSelectOption[] = [
 
 export const TYPE_FILTER_OPTIONS: DashboardSelectOption[] = [
     { value: 'ASSIGNMENT', label: '과제' },
+    { value: 'QUIZ', label: '퀴즈' },
     { value: 'LECTURE', label: '강의' },
     { value: 'FORUM', label: '토론' },
     { value: 'RESOURCE', label: '자료' },

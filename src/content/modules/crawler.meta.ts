@@ -75,6 +75,10 @@
             return E.normalizeAssignmentSubmissionText(part);
         }
 
+        if (/^(?:성적|grade)\s*(?::|：|\s|$)/i.test(part)) {
+            return E.normalizeQuizGradeText(part) || part;
+        }
+
         if (
             /^(?:기간|period|마감(?:\s*일시)?|종료(?:\s*일시)?|due(?:\s*date)?|until)\s*(?::|：|\s|$)/i.test(
                 part,
@@ -96,6 +100,7 @@
         if (/^학습\s*:/i.test(part)) return 'study';
         if (/^출석\b/i.test(part)) return 'attendance';
         if (/^(?:제출\s*완료|미제출)$/i.test(part)) return 'submission';
+        if (/^(?:성적|grade)\s*:/i.test(part)) return 'grade';
         if (/^(?:기간|period)\s*:/i.test(part)) return 'period';
         return `text:${E.canonicalTitle(part)}`;
     };
@@ -117,6 +122,9 @@
             if (/제출\s*완료/.test(text)) return 3;
             if (/미제출/.test(text)) return 2;
             return 1;
+        }
+        if (kind === 'grade') {
+            return /\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?/.test(text) ? 3 : 1;
         }
         if (kind === 'period') {
             if (/\d{4}[^~\-]*[~\-][^~\-]*\d{4}/.test(text)) return 3;

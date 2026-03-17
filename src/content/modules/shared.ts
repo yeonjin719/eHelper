@@ -35,6 +35,7 @@
 
     E.TYPE_LABEL = {
         ASSIGNMENT: '과제',
+        QUIZ: '퀴즈',
         LECTURE: '강의',
         FORUM: '토론',
         RESOURCE: '자료',
@@ -54,6 +55,22 @@
             return u.toString();
         } catch {
             return '';
+        }
+    };
+
+    E.resolveUrl = function resolveUrl(url, baseUrl) {
+        const raw = E.cleanText(url || '');
+        if (!raw) return '';
+
+        try {
+            const resolvedBase = baseUrl
+                ? new URL(String(baseUrl), location.origin).toString()
+                : location.origin;
+            const u = new URL(raw, resolvedBase);
+            u.hash = '';
+            return u.toString();
+        } catch {
+            return E.normalizeUrl(raw);
         }
     };
 
@@ -326,6 +343,59 @@
             return text;
         };
 
+    E.normalizeQuizGradeText = function normalizeQuizGradeText(value) {
+        const text = E.cleanText(value || '');
+        if (!text || text === '-') return '';
+
+        const hasGradeLabel =
+            /(성적|점수|grade|marks?|final\s*grade)/i.test(text);
+        const bareScoreMatch = text.match(
+            /^(\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)$/,
+        );
+        const scoreMatch = text.match(
+            /(\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)/,
+        );
+
+        if (bareScoreMatch?.[1] && bareScoreMatch?.[2]) {
+            const earned = bareScoreMatch[1].replace(',', '.');
+            const total = bareScoreMatch[2].replace(',', '.');
+            return `성적: ${earned}/${total}`;
+        }
+
+        if (hasGradeLabel && scoreMatch?.[1] && scoreMatch?.[2]) {
+            const earned = scoreMatch[1].replace(',', '.');
+            const total = scoreMatch[2].replace(',', '.');
+            return `성적: ${earned}/${total}`;
+        }
+
+        const labeledValue = hasGradeLabel
+            ? text.match(/^(?:성적|점수|grade|marks?|final\s*grade)\s*(?::|：)?\s*(.+)$/i)
+            : null;
+        if (labeledValue?.[1]) {
+            return `성적: ${E.cleanText(labeledValue[1])}`;
+        }
+
+        return '';
+    };
+
+    E.inferQuizStatusFromText = function inferQuizStatusFromText(value) {
+        const text = E.cleanText(value || '');
+        if (!text || text === '-') return 'TODO';
+
+        if (/(미응시|응시하지\s*않|not\s*attempted|no\s*attempt)/i.test(text)) {
+            return 'TODO';
+        }
+
+        if (
+            /\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?/.test(text) ||
+            /(응시\s*완료|채점\s*완료|graded|finished|review)/i.test(text)
+        ) {
+            return 'DONE';
+        }
+
+        return 'UNKNOWN';
+    };
+
     E.inferStatusFromText = function inferStatusFromText(text) {
         const t = E.cleanText(text).toLowerCase();
         if (!t) return 'UNKNOWN';
@@ -336,12 +406,12 @@
         }
 
         const hasTodo =
-            /(미제출|미완료|미수강|미참여|not\s+completed|incomplete|not\s+done|pending|todo|진행\s*중|참여\s*필요)/i.test(
+            /(미제출|미완료|미수강|미참여|미응시|not\s+completed|incomplete|not\s+done|pending|todo|진행\s*중|참여\s*필요|not\s*attempted)/i.test(
                 t,
             );
 
         const hasDone =
-            /(제출\s*완료|수강\s*완료|완료됨|완료|참여\s*완료|completed|done|passed)/i.test(
+            /(제출\s*완료|수강\s*완료|완료됨|완료|참여\s*완료|응시\s*완료|채점\s*완료|completed|done|passed|graded)/i.test(
                 t,
             );
 
@@ -444,6 +514,7 @@
     E.summarizeCounts = function summarizeCounts(items) {
         const counts = {
             ASSIGNMENT: 0,
+            QUIZ: 0,
             LECTURE: 0,
             FORUM: 0,
             RESOURCE: 0,
@@ -454,6 +525,6 @@
             if (counts[item.type] != null) counts[item.type] += 1;
         }
 
-        return `과제 ${counts.ASSIGNMENT} · 강의 ${counts.LECTURE} · 토론 ${counts.FORUM} · 자료 ${counts.RESOURCE} · 공지 ${counts.NOTICE}`;
+        return `과제 ${counts.ASSIGNMENT} · 퀴즈 ${counts.QUIZ} · 강의 ${counts.LECTURE} · 토론 ${counts.FORUM} · 자료 ${counts.RESOURCE} · 공지 ${counts.NOTICE}`;
     };
 })();

@@ -121,6 +121,26 @@ export function sanitizeFilename(value: string) {
         .trim();
 }
 
+export function hasQuizGradeMeta(item: Pick<DashboardItem, 'type' | 'meta'>) {
+    if (item.type !== 'QUIZ') return false;
+    return /(?:^|·)\s*(?:성적|grade)\s*[:：]\s*\S+/i.test(
+        cleanText(item.meta || ''),
+    );
+}
+
+export function getEffectiveItemStatus(item: DashboardItem): ItemStatus {
+    if (item.status === 'DONE') return 'DONE';
+    if (hasQuizGradeMeta(item)) return 'DONE';
+    return item.status;
+}
+
+export function isOverdueItem(item: DashboardItem, now = Date.now()) {
+    if (item.type === 'NOTICE') return false;
+    if (typeof item.dueAt !== 'number') return false;
+    if (item.dueAt >= now) return false;
+    return getEffectiveItemStatus(item) === 'TODO';
+}
+
 function getFilenameExtension(name: string) {
     const match = String(name || '').match(/\.([a-z0-9]{2,10})$/i);
     return match?.[1] ? match[1].toLowerCase() : '';
@@ -276,6 +296,8 @@ export function buildErrorReportMailto(sub: string) {
 export function typeBadgeClass(type: ItemType) {
     if (type === 'ASSIGNMENT')
         return 'bg-rose-50 text-rose-500 ring-1 ring-rose-100';
+    if (type === 'QUIZ')
+        return 'bg-indigo-50 text-indigo-500 ring-1 ring-indigo-100';
     if (type === 'LECTURE') return 'bg-sky-50 text-sky-500 ring-1 ring-sky-100';
     if (type === 'FORUM')
         return 'bg-amber-50 text-amber-500 ring-1 ring-amber-100';
@@ -324,6 +346,8 @@ export function stateBadgeClass(
 export function itemCardToneClass(type: ItemType) {
     if (type === 'ASSIGNMENT')
         return 'border-solid border-zinc-200 border-l-[3px] border-l-rose-200 bg-white hover:border-rose-100 hover:bg-rose-50/35';
+    if (type === 'QUIZ')
+        return 'border-solid border-zinc-200 border-l-[3px] border-l-indigo-200 bg-white hover:border-indigo-100 hover:bg-indigo-50/35';
     if (type === 'LECTURE')
         return 'border-solid border-zinc-200 border-l-[3px] border-l-sky-200 bg-white hover:border-sky-100 hover:bg-sky-50/35';
     if (type === 'FORUM')
@@ -454,7 +478,7 @@ export function selectFilteredItems(state: UiState) {
 
         if (
             state.hidePastAssignments &&
-            item.type === 'ASSIGNMENT' &&
+            (item.type === 'ASSIGNMENT' || item.type === 'QUIZ') &&
             typeof item.dueAt === 'number' &&
             item.dueAt < now
         ) {
@@ -482,23 +506,20 @@ export function selectFilteredItems(state: UiState) {
             }
 
             if (filterValue === 'OVERDUE') {
-                return (
-                    item.status === 'TODO' &&
-                    item.dueAt != null &&
-                    item.dueAt < now
-                );
+                return isOverdueItem(item, now);
             }
 
             if (filterValue === 'TODO_ONLY') {
-                return item.status === 'TODO';
+                return getEffectiveItemStatus(item) === 'TODO';
             }
 
             if (filterValue === 'NOT_DONE') {
                 return (
                     (item.type === 'ASSIGNMENT' ||
+                        item.type === 'QUIZ' ||
                         item.type === 'LECTURE' ||
                         item.type === 'FORUM') &&
-                    item.status !== 'DONE'
+                    getEffectiveItemStatus(item) !== 'DONE'
                 );
             }
 

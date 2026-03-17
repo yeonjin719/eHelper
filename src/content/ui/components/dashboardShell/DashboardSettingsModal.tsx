@@ -118,7 +118,7 @@ export function DashboardSettingsModal({
 
                     <SettingsCheckboxItem
                         id="ecdash-setting-hide-past-assignments"
-                        label="지난 과제 안보기"
+                        label="지난 과제/퀴즈 안보기"
                         checked={hidePastAssignments}
                         onChange={onHidePastAssignmentsChange}
                     />

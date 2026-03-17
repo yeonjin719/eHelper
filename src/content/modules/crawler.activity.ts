@@ -54,6 +54,14 @@
         if (lowerHref.includes('/mod/assign/')) return 'ASSIGNMENT';
 
         if (
+            lowerHref.includes('/mod/quiz/') ||
+            nodeClass.includes('modtype_quiz') ||
+            /(퀴즈|quiz)/i.test(lowerTitle)
+        ) {
+            return 'QUIZ';
+        }
+
+        if (
             lowerHref.includes('/mod/forum/') ||
             nodeClass.includes('modtype_forum')
         ) {
