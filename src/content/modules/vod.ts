@@ -3,7 +3,11 @@
     const E = window.__ECDASH__;
     if (!E) return;
 
-    const VOD_SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
+    const VOD_SPEED_OPTIONS =
+        Array.isArray(E.constants?.VOD_SPEED_OPTIONS) &&
+        E.constants.VOD_SPEED_OPTIONS.length
+            ? E.constants.VOD_SPEED_OPTIONS
+            : [0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4];
 
     E.isVodPlayerPage = function isVodPlayerPage() {
         return document.getElementById('vod_player') != null;
