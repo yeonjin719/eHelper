@@ -1,4 +1,4 @@
-name: Deploy Extension
+name: Build and Release Extension
 
 on:
   push:
@@ -14,6 +14,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      asset_name: ${{ steps.meta.outputs.asset_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,6 +26,20 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      - name: Read version metadata
+        id: meta
+        run: |
+          VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')).version)")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "asset_name=eHelper-v${VERSION}.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Verify version sync
+        run: npm run version:check
+
+      - name: Verify tag matches version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm run version:check -- --tag "${GITHUB_REF_NAME}"
 
       - name: Install deps
         run: npm ci
@@ -34,13 +51,55 @@ jobs:
         run: npm run build
 
       - name: Archive dist
-        run: cd dist && zip -r ../extension.zip .
+        run: cd dist && zip -r "../${{ steps.meta.outputs.asset_name }}" .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: extension-zip
-          path: extension.zip
+          path: ${{ steps.meta.outputs.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify version sync
+        run: npm run version:check -- --tag "${GITHUB_REF_NAME}"
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-zip
+          path: release-assets
+
+      - name: Generate release notes
+        run: node scripts/generate-release-notes.mjs --version "${{ needs.build.outputs.version }}" > release-notes.md
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+          ASSET_NAME: ${{ needs.build.outputs.asset_name }}
+        run: |
+          ASSET_PATH="release-assets/${ASSET_NAME}"
+          TITLE="eHelper ${TAG_NAME}"
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release upload "${TAG_NAME}" "${ASSET_PATH}" --clobber
+            gh release edit "${TAG_NAME}" --title "${TITLE}" --notes-file release-notes.md
+          else
+            gh release create "${TAG_NAME}" "${ASSET_PATH}" --title "${TITLE}" --notes-file release-notes.md
+          fi
 
   publish:
     needs: build
@@ -73,12 +132,14 @@ jobs:
           echo "access_token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
 
       - name: Upload to Chrome Web Store
+        env:
+          ASSET_NAME: ${{ needs.build.outputs.asset_name }}
         run: |
           curl -s -X PUT \
             -H "Authorization: Bearer ${{ steps.token.outputs.access_token }}" \
             -H "x-goog-api-version: 2" \
             -H "Content-Type: application/zip" \
-            --data-binary "@extension.zip" \
+            --data-binary "@${ASSET_NAME}" \
             "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.CWS_EXTENSION_ID }}"
 
       - name: Publish to Chrome Web Store
