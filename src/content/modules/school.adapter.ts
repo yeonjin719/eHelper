@@ -147,6 +147,23 @@
         return E.collectCoursesFromDashboardSMU?.() || [];
     };
 
+    E.fetchDashboardCourses = async function fetchDashboardCourses() {
+        const adapter = E.getActiveSchoolAdapter?.();
+        if (typeof adapter?.fetchDashboardCourses === 'function') {
+            try {
+                const courses = await adapter.fetchDashboardCourses(
+                    adapterContext(),
+                );
+                return Array.isArray(courses) ? courses : [];
+            } catch {
+                // 무시
+            }
+        }
+
+        const fallback = await E.fetchDashboardCoursesSMU?.();
+        return Array.isArray(fallback) ? fallback : [];
+    };
+
     E.crawlAllItemsFromDashboard = async function crawlAllItemsFromDashboard(
         courses,
     ) {

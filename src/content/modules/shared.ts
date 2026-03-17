@@ -17,6 +17,20 @@
         VOD_AUTO_CLOSE_KEY: `${storagePrefix}:vod:autoClose`,
         VOD_LANG_KEY: `${storagePrefix}:vod:lang`,
         VOD_PLAYBACK_RATE_KEY: `${storagePrefix}:vod:playbackRate`,
+        VOD_SPEED_OPTIONS: [
+            0.75,
+            1,
+            1.25,
+            1.5,
+            1.75,
+            2,
+            2.25,
+            2.5,
+            2.75,
+            3,
+            3.5,
+            4,
+        ],
     };
 
     E.TYPE_LABEL = {
@@ -288,6 +302,30 @@
         return 'TODO';
     };
 
+    E.normalizeAssignmentSubmissionText =
+        function normalizeAssignmentSubmissionText(value) {
+            const text = E.cleanText(value || '');
+            if (!text || text === '-') return '';
+
+            if (
+                /(미제출|미\s*제출|제출\s*전|제출\s*필요|제출되지\s*않|제출한\s*것이\s*없|제출된\s*것이\s*없|not\s+submitted|no\s+attempt|nothing\s+submitted|not\s+submitted\s+yet)/i.test(
+                    text,
+                )
+            ) {
+                return '미제출';
+            }
+
+            if (
+                /(제출\s*완료|제출됨|제출\s*성공|submitted(?:\s+for\s+grading)?|submission\s+status\s*:\s*submitted)/i.test(
+                    text,
+                )
+            ) {
+                return '제출 완료';
+            }
+
+            return text;
+        };
+
     E.inferStatusFromText = function inferStatusFromText(text) {
         const t = E.cleanText(text).toLowerCase();
         if (!t) return 'UNKNOWN';
@@ -339,7 +377,16 @@
                 /(기간[^|,]{0,45}|마감[^|,]{0,45}|종료[^|,]{0,45}|due[^|,]{0,45}|until[^|,]{0,45})/i,
             );
             if (keywordMatch) {
-                return E.cleanText(keywordMatch[1]);
+                const matched = E.cleanText(keywordMatch[1]);
+                const periodLabelMatch = matched.match(
+                    /^(?:기간|마감(?:\s*일시)?|종료(?:\s*일시)?|due(?:\s*date)?|until)\s*(?::|：)?\s*(.*)$/i,
+                );
+                if (periodLabelMatch) {
+                    const rest = E.cleanText(periodLabelMatch[1]);
+                    return rest ? `기간: ${rest}` : '기간:';
+                }
+
+                return matched;
             }
         }
 

@@ -13,6 +13,8 @@
         isDashboardPage: () => Boolean(E.isDashboardSMU?.()),
         collectDashboardCourses: () =>
             E.collectCoursesFromDashboardSMU?.() || [],
+        fetchDashboardCourses: async () =>
+            (await E.fetchDashboardCoursesSMU?.()) || [],
         crawlAllDashboardItems: async (_ctx, courses) =>
             (await E.crawlAllItemsFromDashboardSMU?.(courses)) || [],
         getCurrentCourse: () => E.getCurrentCourseFromLocation?.() || null,

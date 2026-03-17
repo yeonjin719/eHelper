@@ -236,10 +236,18 @@
                 normalizedCourseIsNew,
             );
             if (assignItems.length) {
-                all.push(...assignItems);
+                const enrichedAssignments = await E.enrichAssignmentItems(
+                    assignItems,
+                    1,
+                );
+                all.push(...enrichedAssignments);
             } else if (assignmentFallbackItems.length) {
-                all.push(...assignmentFallbackItems);
-                console.warn(
+                const enrichedAssignments = await E.enrichAssignmentItems(
+                    assignmentFallbackItems,
+                    1,
+                );
+                all.push(...enrichedAssignments);
+                console.debug(
                     `[ECDASH] assignment index empty. using course-view fallback. courseId=${courseId} count=${assignmentFallbackItems.length}`,
                 );
             }
@@ -249,8 +257,12 @@
                 err,
             );
             if (assignmentFallbackItems.length) {
-                all.push(...assignmentFallbackItems);
-                console.warn(
+                const enrichedAssignments = await E.enrichAssignmentItems(
+                    assignmentFallbackItems,
+                    1,
+                );
+                all.push(...enrichedAssignments);
+                console.debug(
                     `[ECDASH] assignment fallback used from course view. courseId=${courseId} count=${assignmentFallbackItems.length}`,
                 );
             }

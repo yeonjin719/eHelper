@@ -90,6 +90,44 @@
         return E.collectCoursesFromDashboardSMU?.() || [];
     }
 
+    async function loadStoredCourseCache() {
+        const cached = await E.loadCourseCache();
+        return Array.isArray(cached.courses) ? cached.courses : [];
+    }
+
+    async function syncDashboardCourseCache() {
+        try {
+            const courses = isDashboardPage()
+                ? collectDashboardCourses()
+                : await E.fetchDashboardCourses?.();
+            const normalized = E.normalizeCourseCache(courses || []);
+            if (!normalized.length) return [];
+
+            await E.saveCourseCache?.(normalized);
+            setKnownCourses(normalized);
+            return normalized;
+        } catch (err) {
+            console.warn('[ECDASH] dashboard course sync failed.', err);
+            return [];
+        }
+    }
+
+    async function hydrateKnownCourses() {
+        const cachedCourses = await loadStoredCourseCache();
+        if (cachedCourses.length) {
+            setKnownCourses(cachedCourses);
+            return cachedCourses;
+        }
+
+        const syncedCourses = await syncDashboardCourseCache();
+        if (syncedCourses.length) {
+            return syncedCourses;
+        }
+
+        setKnownCourses([]);
+        return [];
+    }
+
     async function crawlAllDashboardItems(courses) {
         if (typeof E.crawlAllItemsFromDashboard === 'function') {
             const items = await E.crawlAllItemsFromDashboard(courses);
@@ -167,17 +205,17 @@
             if (isDashboardPage()) {
                 preflightCourses = collectDashboardCourses();
                 if (preflightCourses.length) {
+                    await E.saveCourseCache?.(preflightCourses);
                     setKnownCourses(preflightCourses);
                 }
+            } else {
+                preflightCourses = await syncDashboardCourseCache();
             }
 
             const snap = await E.loadSnapshot();
             let fallbackCourses = preflightCourses;
             if (!fallbackCourses.length) {
-                const cachedForFilter = await E.loadCourseCache();
-                fallbackCourses = Array.isArray(cachedForFilter.courses)
-                    ? cachedForFilter.courses
-                    : [];
+                fallbackCourses = await loadStoredCourseCache();
                 if (fallbackCourses.length) {
                     setKnownCourses(fallbackCourses);
                 }
@@ -198,7 +236,9 @@
             ) {
                 window.__ECDASH_ITEMS__ = visibleSnapshotItems;
                 E.setBadge('CACHE');
-                E.setSub('최근 캐시 데이터를 사용 중이에요. ↻로 강제 새로고침 가능');
+                E.setSub(
+                    '최근 캐시 데이터를 사용 중이에요. ↻로 강제 새로고침 가능',
+                );
                 E.render(visibleSnapshotItems);
                 return;
             }
@@ -216,7 +256,8 @@
                 let excludedCourseIds = new Set();
 
                 if (dashboardCourses.length) {
-                    lastCourseSignature = getCourseSignature() || lastCourseSignature;
+                    lastCourseSignature =
+                        getCourseSignature() || lastCourseSignature;
                     await E.saveCourseCache?.(dashboardCourses);
                     setKnownCourses(dashboardCourses);
                     const filtered = getFilteredCourseState(
@@ -227,7 +268,9 @@
                     excludedCourseIds = filtered.excludedCourseIds;
                 } else {
                     const cachedCourses = await E.loadCourseCache();
-                    const rawCachedCourses = Array.isArray(cachedCourses.courses)
+                    const rawCachedCourses = Array.isArray(
+                        cachedCourses.courses,
+                    )
                         ? cachedCourses.courses
                         : [];
                     setKnownCourses(rawCachedCourses);
@@ -270,14 +313,16 @@
                 return;
             }
 
-            const cached = await E.loadCourseCache();
             const currentCourse = getCurrentCourse();
 
             // 비-대시보드 페이지에서는 캐시된 과목 목록을 기준으로 재크롤링.
+            // 현재 라우트가 대시보드가 아니어도 루트 페이지에서 과목명을 동기화해 둔다.
             // 현재 페이지의 과목 식별자를 우선 반영해 캐시 신선도를 유지.
-            const rawCachedCourses = Array.isArray(cached.courses)
-                ? [...cached.courses]
-                : [];
+            const rawCachedCourses = [
+                ...(preflightCourses.length
+                    ? preflightCourses
+                    : await loadStoredCourseCache()),
+            ];
             const filteredCourses = getFilteredCourseState(
                 rawCachedCourses,
                 includeSmClass,
@@ -290,9 +335,11 @@
                 const rawIndex = rawCachedCourses.findIndex(
                     (course) => String(course.courseId) === currentCourseId,
                 );
-                const knownCurrent = rawIndex >= 0 ? rawCachedCourses[rawIndex] : null;
+                const knownCurrent =
+                    rawIndex >= 0 ? rawCachedCourses[rawIndex] : null;
                 const skipCurrentCourse =
-                    !includeSmClass && isSmClassCourse(knownCurrent || currentCourse);
+                    !includeSmClass &&
+                    isSmClassCourse(knownCurrent || currentCourse);
 
                 if (skipCurrentCourse) {
                     excludedCourseIds.add(currentCourseId);
@@ -301,7 +348,8 @@
                         rawCachedCourses.unshift(currentCourse);
                     } else if (
                         currentCourse.courseName &&
-                        currentCourse.courseName !== `course-${currentCourse.courseId}`
+                        currentCourse.courseName !==
+                            `course-${currentCourse.courseId}`
                     ) {
                         rawCachedCourses[rawIndex] = {
                             ...rawCachedCourses[rawIndex],
@@ -319,7 +367,8 @@
                         crawlCourses.unshift(currentCourse);
                     } else if (
                         currentCourse.courseName &&
-                        currentCourse.courseName !== `course-${currentCourse.courseId}`
+                        currentCourse.courseName !==
+                            `course-${currentCourse.courseId}`
                     ) {
                         crawlCourses[crawlIndex] = {
                             ...crawlCourses[crawlIndex],
@@ -331,7 +380,9 @@
                     }
                 }
             }
-            setKnownCourses(rawCachedCourses.length ? rawCachedCourses : crawlCourses);
+            setKnownCourses(
+                rawCachedCourses.length ? rawCachedCourses : crawlCourses,
+            );
 
             if (!crawlCourses.length) {
                 window.__ECDASH_ITEMS__ = filterItemsByExcludedCourses(
@@ -341,7 +392,7 @@
                 E.setBadge('WAIT');
                 E.setSub(
                     includeSmClass
-                        ? '대시보드에서 과목을 찾은 뒤 크롤링해요. (대시보드로 이동해 주세요)'
+                        ? '저장된 과목 목록이 아직 없어요. 잠시 후 다시 시도해 주세요.'
                         : 'SM-Class 제외 설정으로 현재 크롤링할 과목이 없어요. 설정에서 포함할 수 있어요.',
                 );
                 E.render(window.__ECDASH_ITEMS__);
@@ -397,7 +448,9 @@
         } catch (e) {
             console.error(e);
             E.setBadge('ERR');
-            E.setSub('크롤링 중 오류가 발생했어요. (로그인 상태/권한/네트워크 확인)');
+            E.setSub(
+                '크롤링 중 오류가 발생했어요. (로그인 상태/권한/네트워크 확인)',
+            );
         } finally {
             E.setLoading?.(false);
             inFlight = false;
@@ -420,6 +473,7 @@
         }
 
         E.ensureRoot();
+        const knownCourses = await hydrateKnownCourses();
 
         if (isProgressPage()) {
             E.setLoading?.(true, '온라인출석부 데이터를 가져오는 중...');
@@ -439,13 +493,8 @@
 
         const includeSmClass = await loadIncludeSmClassSetting();
         const snap = await E.loadSnapshot();
-        const cachedCourses = await E.loadCourseCache();
-        const normalizedCachedCourses = Array.isArray(cachedCourses.courses)
-            ? cachedCourses.courses
-            : [];
-        setKnownCourses(normalizedCachedCourses);
         const cachedCourseFilter = getFilteredCourseState(
-            normalizedCachedCourses,
+            knownCourses,
             includeSmClass,
         );
         const visibleSnapItems = filterItemsByExcludedCourses(
@@ -471,7 +520,7 @@
             refreshAll({ force: false });
         } else {
             E.setBadge('WAIT');
-            E.setSub('캐시된 과목 정보가 있으면 현재 페이지에서도 갱신해요.');
+            E.setSub('저장된 과목 목록을 기준으로 현재 페이지에서도 갱신해요.');
             refreshAll({ force: false });
         }
 

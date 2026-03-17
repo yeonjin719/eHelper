@@ -4,8 +4,12 @@
     if (!E) return;
 
     // 대시보드 과목 수집 + 과목 캐시 + 공통 크롤링 입출력.
-    E.isDashboardSMU = function isDashboardSMU() {
-        return document.querySelector('ul.my-course-lists') != null;
+    E.isDashboardSMU = function isDashboardSMU(doc = document) {
+        return doc?.querySelector?.('ul.my-course-lists') != null;
+    };
+
+    E.getDashboardUrlSMU = function getDashboardUrlSMU() {
+        return new URL('/', location.origin).toString();
     };
 
     E.hasSmClassLabel = function hasSmClassLabel(labelText) {
@@ -125,12 +129,12 @@
         };
     };
 
-    E.collectCoursesFromDashboardSMU =
-        function collectCoursesFromDashboardSMU() {
+    E.collectCoursesFromDashboardDocumentSMU =
+        function collectCoursesFromDashboardDocumentSMU(doc = document) {
             const links = [
-                ...document.querySelectorAll(
+                ...(doc?.querySelectorAll?.(
                     'ul.my-course-lists a.course_link[href*="/course/view.php?id="]',
-                ),
+                ) || []),
             ];
 
             const seen = new Set();
@@ -138,7 +142,11 @@
 
             for (const a of links) {
                 try {
-                    const u = new URL(a.href, location.origin);
+                    const href =
+                        a.getAttribute?.('href') ||
+                        a.href ||
+                        '';
+                    const u = new URL(href, location.origin);
                     const courseId = u.searchParams.get('id');
                     if (!courseId || seen.has(courseId)) continue;
 
@@ -166,6 +174,11 @@
             }
 
             return courses;
+        };
+
+    E.collectCoursesFromDashboardSMU =
+        function collectCoursesFromDashboardSMU(doc = document) {
+            return E.collectCoursesFromDashboardDocumentSMU(doc);
         };
 
     E.normalizeCourseCache = function normalizeCourseCache(courses) {
@@ -261,6 +274,16 @@
         }
     };
 
+    E.parseDashboardCoursesHtmlSMU = function parseDashboardCoursesHtmlSMU(
+        htmlText,
+    ) {
+        const doc = new DOMParser().parseFromString(
+            String(htmlText || ''),
+            'text/html',
+        );
+        return E.collectCoursesFromDashboardDocumentSMU(doc);
+    };
+
     E.getCurrentCourseFromLocation = function getCurrentCourseFromLocation() {
         const path = location.pathname.toLowerCase();
         const isCourseRelated =
@@ -354,6 +377,11 @@
         throw lastErr;
     };
 
+    E.fetchDashboardCoursesSMU = async function fetchDashboardCoursesSMU() {
+        const dashboardHtml = await E.fetchHtml(E.getDashboardUrlSMU());
+        return E.parseDashboardCoursesHtmlSMU(dashboardHtml);
+    };
+
     E.parseAssignIndexHtml = function parseAssignIndexHtml(
         htmlText,
         courseId,
@@ -380,10 +408,14 @@
                 E.cleanText(tr.querySelector('td.c2')?.textContent) || '';
             const submitText =
                 E.cleanText(tr.querySelector('td.c3')?.textContent) || '';
+            const normalizedSubmitText =
+                E.normalizeAssignmentSubmissionText(submitText);
 
             const dueAt =
                 dueText && dueText !== '-' ? E.parseDueAt(dueText) : undefined;
-            const status = E.inferStatusFromText(submitText);
+            const status = E.inferStatusFromText(
+                normalizedSubmitText || submitText,
+            );
 
             items.push({
                 id: E.makeId('ASSIGNMENT', courseId, title, url),
@@ -396,7 +428,9 @@
                 section,
                 dueAt,
                 status,
-                meta: submitText && submitText !== '-' ? submitText : undefined,
+                meta:
+                    normalizedSubmitText ||
+                    (submitText && submitText !== '-' ? submitText : undefined),
             });
         });
 

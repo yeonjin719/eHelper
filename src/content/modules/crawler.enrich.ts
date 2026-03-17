@@ -37,6 +37,111 @@
         };
     };
 
+    E.collectSummaryRowsFromDoc = function collectSummaryRowsFromDoc(
+        doc,
+        selectors,
+    ) {
+        const rows = [];
+        const seen = new Set();
+
+        doc.querySelectorAll(selectors.join(', ')).forEach((tr) => {
+            const cells = [...tr.querySelectorAll('th, td')];
+            if (cells.length < 2) return;
+
+            const label = E.cleanText(cells[0]?.textContent || '');
+            const value = E.cleanText(
+                cells[cells.length - 1]?.textContent || '',
+            );
+            if (!label || !value) return;
+
+            const key = `${label}::${value}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            rows.push({ label, value });
+        });
+
+        return rows;
+    };
+
+    E.extractAssignmentMetaFromDoc = function extractAssignmentMetaFromDoc(doc) {
+        const detail = E.extractDueMetaFromDoc(doc);
+        const rows = E.collectSummaryRowsFromDoc(doc, [
+            '.submissionstatustable tr',
+            '.submissionsummarytable tr',
+            '.submissionstatus tr',
+            '.assignsubmission_status tr',
+            'table.generaltable tr',
+        ]);
+
+        let submissionText = E.normalizeAssignmentSubmissionText(
+            doc.querySelector(
+                'td[class*="submissionstatus"], td[class*="submission-status"]',
+            )?.textContent || '',
+        );
+        let openText = '';
+        let dueText = '';
+
+        for (const row of rows) {
+            const label = E.cleanText(row.label);
+            const value = E.cleanText(row.value);
+            if (!label || !value) continue;
+
+            if (!submissionText && /(제출\s*상태|submission\s*status)/i.test(label)) {
+                submissionText = E.normalizeAssignmentSubmissionText(value);
+                continue;
+            }
+
+            if (
+                !openText &&
+                /(제출\s*시작|시작\s*일|열림|open(?:ed)?|available\s*from|allow\s*submissions\s*from)/i.test(
+                    label,
+                )
+            ) {
+                openText = value;
+                continue;
+            }
+
+            if (
+                !dueText &&
+                /(마감|마감일|종료|due(?:\s*date)?|cut-?off(?:\s*date)?|until)/i.test(
+                    label,
+                )
+            ) {
+                dueText = value;
+            }
+        }
+
+        const dueSignal = E.pickDueSignalFromTexts(
+            [
+                openText && `시작 ${openText}`,
+                dueText && `마감 ${dueText}`,
+                openText && dueText && `기간 ${openText} ~ ${dueText}`,
+            ].filter(Boolean),
+        );
+        const dueInfo = E.pickPreferredDueInfo(
+            {
+                dueAt: dueSignal?.dueAt,
+                dueScore: dueSignal?.dueScore || 0,
+            },
+            detail,
+        );
+        const periodMeta =
+            openText && dueText ? `기간: ${openText} ~ ${dueText}` : undefined;
+        const meta = E.mergeMetaText(
+            E.mergeMetaText(submissionText || undefined, periodMeta),
+            detail.meta,
+        );
+
+        return {
+            dueAt: dueInfo.dueAt,
+            dueScore: dueInfo.dueScore,
+            status: submissionText
+                ? E.inferStatusFromText(submissionText)
+                : 'UNKNOWN',
+            meta,
+        };
+    };
+
     // 포럼 본문 문구를 기반으로 참여 상태를 추론한다.
     E.inferForumParticipationStatus = function inferForumParticipationStatus(
         doc,
@@ -86,6 +191,36 @@
             } catch (err) {
                 console.warn(
                     '[ECDASH] forum detail crawl failed:',
+                    item.url,
+                    err,
+                );
+                return item;
+            }
+        });
+    };
+
+    E.enrichAssignmentItems = async function enrichAssignmentItems(
+        items,
+        limit = 1,
+    ) {
+        return await E.mapWithConcurrency(items, limit, async (item) => {
+            try {
+                const html = await E.fetchHtml(item.url);
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const detail = E.extractAssignmentMetaFromDoc(doc);
+                const dueInfo = E.pickPreferredDueInfo(item, detail);
+
+                return {
+                    ...item,
+                    dueAt: dueInfo.dueAt,
+                    dueScore: dueInfo.dueScore,
+                    status:
+                        detail.status !== 'UNKNOWN' ? detail.status : item.status,
+                    meta: E.mergeMetaText(item.meta, detail.meta),
+                };
+            } catch (err) {
+                console.warn(
+                    '[ECDASH] assignment detail crawl failed:',
                     item.url,
                     err,
                 );

@@ -57,9 +57,34 @@
             return E.normalizeAttendanceMeta(part);
         }
 
-        if (/^(?:기간|period)\s*(?::|：|\s|$)/i.test(part)) {
+        if (/^(?:제출\s*상태|submission\s*status)\s*(?::|：|\s|$)/i.test(part)) {
             const rest = E.cleanText(
-                part.replace(/^(?:기간|period)\s*(?::|：)?\s*/i, ''),
+                part.replace(
+                    /^(?:제출\s*상태|submission\s*status)\s*(?::|：)?\s*/i,
+                    '',
+                ),
+            );
+            return E.normalizeAssignmentSubmissionText(rest);
+        }
+
+        if (
+            /^(?:제출\s*완료|미제출|제출\s*전|submitted(?:\s+for\s+grading)?|not\s+submitted)/i.test(
+                part,
+            )
+        ) {
+            return E.normalizeAssignmentSubmissionText(part);
+        }
+
+        if (
+            /^(?:기간|period|마감(?:\s*일시)?|종료(?:\s*일시)?|due(?:\s*date)?|until)\s*(?::|：|\s|$)/i.test(
+                part,
+            )
+        ) {
+            const rest = E.cleanText(
+                part.replace(
+                    /^(?:기간|period|마감(?:\s*일시)?|종료(?:\s*일시)?|due(?:\s*date)?|until)\s*(?::|：)?\s*/i,
+                    '',
+                ),
             );
             return rest ? `기간: ${rest}` : '기간:';
         }
@@ -70,6 +95,7 @@
     E.metaPartKind = function metaPartKind(part) {
         if (/^학습\s*:/i.test(part)) return 'study';
         if (/^출석\b/i.test(part)) return 'attendance';
+        if (/^(?:제출\s*완료|미제출)$/i.test(part)) return 'submission';
         if (/^(?:기간|period)\s*:/i.test(part)) return 'period';
         return `text:${E.canonicalTitle(part)}`;
     };
@@ -85,6 +111,11 @@
         if (kind === 'attendance') {
             if (/\d{1,3}\s*%/.test(text)) return 3;
             if (/(완료|미완료)/.test(text)) return 2;
+            return 1;
+        }
+        if (kind === 'submission') {
+            if (/제출\s*완료/.test(text)) return 3;
+            if (/미제출/.test(text)) return 2;
             return 1;
         }
         if (kind === 'period') {
