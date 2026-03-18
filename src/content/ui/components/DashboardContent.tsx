@@ -49,7 +49,11 @@ function LoadingOverlay({ message }: { message: string }) {
             role="status"
             aria-live="polite"
         >
-            <div className="shrink-0 flex min-w-[220px] max-w-[320px] flex-col items-center gap-3 rounded-2xl border border-zinc-200 bg-white/96 px-5 py-4 text-center">
+            <div
+                className="absolute left-1/2 top-0 h-28 w-[min(360px,calc(100%-32px))] -translate-x-1/2 -translate-y-6 rounded-[28px] bg-white/82 shadow-[0_20px_48px_rgba(255,255,255,0.92)] blur-[8px]"
+                aria-hidden="true"
+            />
+            <div className="relative shrink-0 flex min-w-[220px] max-w-[320px] flex-col items-center gap-3 rounded-2xl border border-zinc-300 bg-white/98 px-5 py-4 text-center shadow-[0_18px_40px_rgba(15,23,42,0.18)]">
                 <LoadingSpinner />
                 <div className="space-y-1 text-[12px] font-semibold text-zinc-900">
                     {lines.map((line, index) => (
@@ -57,6 +61,35 @@ function LoadingOverlay({ message }: { message: string }) {
                     ))}
                 </div>
             </div>
+        </div>
+    );
+}
+
+function LoadingStateCard({ message }: { message: string }) {
+    const lines = splitLoadingMessage(message || '불러오는 중...');
+
+    return (
+        <div
+            className="flex min-h-[124px] items-center justify-center rounded-xl border border-zinc-200 bg-white/95 px-3 py-5 text-[12px] leading-5 text-zinc-600"
+            role="status"
+            aria-live="polite"
+        >
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-center">
+                <LoadingSpinner compact />
+                <div className="space-y-1 font-semibold text-zinc-900">
+                    {lines.map((line, index) => (
+                        <div key={`${line}-${index}`}>{line}</div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function EmptyStateCard({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="flex h-[40px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 text-center text-[12px] leading-5 text-zinc-600 shadow-[0_4px_10px_rgba(15,23,42,0.05)]">
+            {children}
         </div>
     );
 }
@@ -87,45 +120,32 @@ export function DashboardContent({
     const overdueCount = filteredItems.filter(
         (item) => isOverdueItem(item, now),
     ).length;
-    const shouldShowLoadingOverlay = loading && hasItems;
-    const loadingMessageLines = splitLoadingMessage(
-        loadingMessage || '불러오는 중...',
-    );
+    const hasVisibleItems = filteredItems.length > 0;
+    const shouldShowLoadingOverlay = loading && hasVisibleItems;
 
     if (!hasItems) {
         if (loading) {
-            return (
-                <div
-                    className="flex min-h-[124px] items-center justify-center rounded-xl border border-zinc-200 bg-white/95 px-3 py-5 text-[12px] leading-5 text-zinc-600"
-                    role="status"
-                    aria-live="polite"
-                >
-                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-center">
-                        <LoadingSpinner compact />
-                        <div className="space-y-1 font-semibold text-zinc-900">
-                            {loadingMessageLines.map((line, index) => (
-                                <div key={`${line}-${index}`}>{line}</div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            );
+            return <LoadingStateCard message={loadingMessage} />;
         }
 
         return (
-            <div className="flex h-[40px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 text-center text-[12px] leading-5 text-zinc-600 shadow-[0_4px_10px_rgba(15,23,42,0.05)]">
+            <EmptyStateCard>
                 {onDashboardPage
                     ? '데이터가 없어요. ↻ 새로고침'
                     : '대시보드에서 사용 가능해요.'}
-            </div>
+            </EmptyStateCard>
         );
     }
 
-    const content = !filteredItems.length ? (
-        <div className="flex h-[40px] items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 text-center text-[12px] leading-5 text-zinc-600 shadow-[0_4px_10px_rgba(15,23,42,0.05)]">
-            조건에 맞는 항목이 없어요.
-        </div>
-    ) : (
+    if (!hasVisibleItems) {
+        if (loading) {
+            return <LoadingStateCard message={loadingMessage} />;
+        }
+
+        return <EmptyStateCard>조건에 맞는 항목이 없어요.</EmptyStateCard>;
+    }
+
+    const content = (
         <div className="space-y-3">
             <section className="rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-[0_4px_10px_rgba(15,23,42,0.05)]">
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
@@ -166,7 +186,7 @@ export function DashboardContent({
             <div
                 className={
                     shouldShowLoadingOverlay
-                        ? 'pointer-events-none select-none blur-[4px] opacity-60 transition duration-150'
+                        ? 'pointer-events-none select-none blur-[5px] opacity-25 transition duration-150'
                         : ''
                 }
                 aria-hidden={shouldShowLoadingOverlay}
