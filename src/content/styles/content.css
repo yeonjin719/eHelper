@@ -127,6 +127,31 @@
   color: #e0f2fe;
 }
 
+.ecdash-vod-turbo-button {
+  width: 100%;
+  height: 30px;
+  margin-top: 6px;
+  border: 1px solid rgba(251, 191, 36, 0.38);
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.18);
+  color: #fef3c7;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.ecdash-vod-turbo-button:hover {
+  background: rgba(245, 158, 11, 0.28);
+}
+
+.ecdash-vod-turbo-button.is-active {
+  border-color: rgba(253, 224, 71, 0.8);
+  background: rgba(245, 158, 11, 0.34);
+  color: #fff7d6;
+}
+
 .ecdash-vod-download {
   width: 34px;
   height: 30px;
@@ -145,33 +170,8 @@
   background: rgba(34, 197, 94, 0.3);
 }
 
-.ecdash-vod-seek-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.ecdash-vod-seek-btn {
-  height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #e5e7eb;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  font-variant-numeric: tabular-nums;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
 .ecdash-vod-speed-actions button svg,
-.ecdash-vod-download svg,
-.ecdash-vod-seek-btn svg {
+.ecdash-vod-download svg {
   width: 15px;
   height: 15px;
   stroke: currentColor;
@@ -181,10 +181,6 @@
   fill: none;
   pointer-events: none;
   display: block;
-}
-
-.ecdash-vod-seek-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
 }
 
 .ecdash-vod-download:disabled {

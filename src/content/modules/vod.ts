@@ -8,6 +8,7 @@
         E.constants.VOD_SPEED_OPTIONS.length
             ? E.constants.VOD_SPEED_OPTIONS
             : [0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4];
+    const VOD_TURBO_RATE = 1000;
 
     E.isVodPlayerPage = function isVodPlayerPage() {
         return document.getElementById('vod_player') != null;
@@ -71,6 +72,7 @@
     E.normalizeVodPlaybackRate = function normalizeVodPlaybackRate(raw) {
         const value = Number(raw);
         if (!Number.isFinite(value)) return 1;
+        if (value === VOD_TURBO_RATE) return VOD_TURBO_RATE;
         if (value < VOD_SPEED_OPTIONS[0]) return VOD_SPEED_OPTIONS[0];
         if (value > VOD_SPEED_OPTIONS[VOD_SPEED_OPTIONS.length - 1]) {
             return VOD_SPEED_OPTIONS[VOD_SPEED_OPTIONS.length - 1];
@@ -80,6 +82,7 @@
 
     E.closestVodSpeedOption = function closestVodSpeedOption(raw) {
         const value = E.normalizeVodPlaybackRate(raw);
+        if (value === VOD_TURBO_RATE) return VOD_TURBO_RATE;
         let best = VOD_SPEED_OPTIONS[0];
         let diff = Math.abs(value - best);
 
@@ -95,7 +98,10 @@
     };
 
     E.nextVodSpeedOption = function nextVodSpeedOption(raw, direction) {
-        const current = E.closestVodSpeedOption(raw);
+        const current =
+            E.closestVodSpeedOption(raw) === VOD_TURBO_RATE
+                ? VOD_SPEED_OPTIONS[VOD_SPEED_OPTIONS.length - 1]
+                : E.closestVodSpeedOption(raw);
         const idx = VOD_SPEED_OPTIONS.findIndex(
             (option) => Math.abs(option - current) < 0.001,
         );
@@ -377,6 +383,56 @@
         }
 
         return { applied, rate };
+    };
+
+    E.stopVodTurboMode = function stopVodTurboMode() {
+        E.__vodTurboEnabled = false;
+        if (E.__vodTurboTimer) {
+            clearInterval(E.__vodTurboTimer);
+            E.__vodTurboTimer = null;
+        }
+    };
+
+    E.startVodTurboMode = function startVodTurboMode() {
+        E.__vodTurboEnabled = true;
+
+        // 플레이어 자체는 지원 최대치로 유지하고, 재생 중에는 주기적으로 앞으로 점프한다.
+        E.applyVodPlaybackRate(4);
+
+        if (E.__vodTurboTimer) return { applied: true, rate: VOD_TURBO_RATE };
+
+        E.__vodTurboTimer = setInterval(() => {
+            if (!E.__vodTurboEnabled) return;
+
+            const video = E.findVodVideoElement();
+            if (video) {
+                if (video.paused || video.ended || video.readyState < 1) return;
+            } else {
+                const player = E.getVodJwPlayerInstance();
+                if (player && typeof player.getState === 'function') {
+                    try {
+                        const state = String(player.getState() || '').toLowerCase();
+                        if (state && state !== 'playing' && state !== 'buffering') return;
+                    } catch (_) {
+                        // 무시
+                    }
+                }
+            }
+
+            E.seekVodByDelta(200);
+        }, 200);
+
+        return { applied: true, rate: VOD_TURBO_RATE };
+    };
+
+    E.applyVodPlaybackMode = function applyVodPlaybackMode(rawRate) {
+        const rate = E.closestVodSpeedOption(rawRate);
+        if (rate === VOD_TURBO_RATE) {
+            return E.startVodTurboMode();
+        }
+
+        E.stopVodTurboMode();
+        return E.applyVodPlaybackRate(rate);
     };
 
     E.seekVodByDelta = function seekVodByDelta(rawDeltaSec) {

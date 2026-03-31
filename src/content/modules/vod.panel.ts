@@ -14,6 +14,20 @@ import { buildVodPanelMarkup } from './vod.panel.template';
     const VOD_SPEED_MENU_ID = 'ecdash-vod-speed-menu';
     const VOD_PANEL_BODY_ID = 'ecdash-vod-panel-body';
     const VOD_PANEL_TOGGLE_ID = 'ecdash-vod-panel-toggle';
+    const VOD_TURBO_RATE = 1000;
+
+    function formatVodSpeedLabel(rate) {
+        const current = E.closestVodSpeedOption(rate);
+        return Number.isInteger(current) ? `${current}x` : `${current.toFixed(2)}x`;
+    }
+
+    function updateVodTurboButtonState(panel, rate) {
+        const turboButton = panel?.querySelector('#ecdash-vod-speed-max');
+        if (!turboButton) return;
+        const isActive = E.closestVodSpeedOption(rate) === VOD_TURBO_RATE;
+        turboButton.classList.toggle('is-active', isActive);
+        turboButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    }
 
     E.updateVodSpeedPanelRate = function updateVodSpeedPanelRate(rate) {
         const panel = document.getElementById(VOD_SPEED_PANEL_ID);
@@ -22,8 +36,10 @@ import { buildVodPanelMarkup } from './vod.panel.template';
         const current = E.closestVodSpeedOption(rate);
         const label = panel.querySelector('#ecdash-vod-speed-current');
         if (!label) return;
-        label.textContent = `${current.toFixed(2)}x`;
-        label.setAttribute('aria-label', `현재 배속 ${current.toFixed(2)}x`);
+        const speedLabel = formatVodSpeedLabel(current);
+        label.textContent = speedLabel;
+        label.setAttribute('aria-label', `현재 배속 ${speedLabel}`);
+        updateVodTurboButtonState(panel, current);
     };
 
     E.updateVodSpeedMenuSelection = function updateVodSpeedMenuSelection(rate) {
@@ -37,6 +53,7 @@ import { buildVodPanelMarkup } from './vod.panel.template';
             btn.classList.toggle('is-active', active);
             btn.setAttribute('aria-selected', active ? 'true' : 'false');
         });
+        updateVodTurboButtonState(panel, current);
     };
 
     E.setVodSpeedMenuOpen = function setVodSpeedMenuOpen(panel, isOpen) {
@@ -92,7 +109,7 @@ import { buildVodPanelMarkup } from './vod.panel.template';
                 btn.dataset.rate = String(option);
                 btn.setAttribute('role', 'option');
                 btn.setAttribute('aria-selected', 'false');
-                btn.textContent = `${option.toFixed(2)}x`;
+                btn.textContent = formatVodSpeedLabel(option);
                 menu.appendChild(btn);
             });
         }
@@ -119,7 +136,10 @@ import { buildVodPanelMarkup } from './vod.panel.template';
         };
 
         const applyAndPersist = async (nextRate, persist = true) => {
-            const { rate } = E.applyVodPlaybackRate(nextRate);
+            const { rate } =
+                typeof E.applyVodPlaybackMode === 'function'
+                    ? E.applyVodPlaybackMode(nextRate)
+                    : E.applyVodPlaybackRate(nextRate);
             targetRate = E.closestVodSpeedOption(rate);
             E.updateVodSpeedPanelRate(targetRate);
             E.updateVodSpeedMenuSelection(targetRate);
@@ -151,6 +171,13 @@ import { buildVodPanelMarkup } from './vod.panel.template';
             ?.addEventListener('click', () => {
                 closeMenu();
                 void applyAndPersist(E.nextVodSpeedOption(targetRate, 1), true);
+            });
+
+        panel
+            .querySelector('#ecdash-vod-speed-max')
+            ?.addEventListener('click', () => {
+                closeMenu();
+                void applyAndPersist(VOD_TURBO_RATE, true);
             });
 
         panel
@@ -198,20 +225,6 @@ import { buildVodPanelMarkup } from './vod.panel.template';
                 }
             });
 
-        panel
-            .querySelector('#ecdash-vod-seek-back')
-            ?.addEventListener('click', () => {
-                closeMenu();
-                E.seekVodByDelta(-5);
-            });
-
-        panel
-            .querySelector('#ecdash-vod-seek-forward')
-            ?.addEventListener('click', () => {
-                closeMenu();
-                E.seekVodByDelta(5);
-            });
-
         document.addEventListener('click', (event) => {
             if (panel.contains(event.target)) return;
             closeMenu();
@@ -257,7 +270,10 @@ import { buildVodPanelMarkup } from './vod.panel.template';
                 video.dataset.ecdashSpeedBound = '1';
 
                 const sync = () => {
-                    const applied = E.applyVodPlaybackRate(targetRate);
+                    const applied =
+                        typeof E.applyVodPlaybackMode === 'function'
+                            ? E.applyVodPlaybackMode(targetRate)
+                            : E.applyVodPlaybackRate(targetRate);
                     if (applied.applied) {
                         E.updateVodSpeedPanelRate(applied.rate);
                         E.updateVodSpeedMenuSelection(applied.rate);
@@ -274,7 +290,10 @@ import { buildVodPanelMarkup } from './vod.panel.template';
         if (vodRoot) {
             const speedObserver = new MutationObserver(() => {
                 bindVideoListeners();
-                const applied = E.applyVodPlaybackRate(targetRate);
+                const applied =
+                    typeof E.applyVodPlaybackMode === 'function'
+                        ? E.applyVodPlaybackMode(targetRate)
+                        : E.applyVodPlaybackRate(targetRate);
                 if (applied.applied) {
                     E.updateVodSpeedPanelRate(applied.rate);
                     E.updateVodSpeedMenuSelection(applied.rate);
@@ -290,13 +309,19 @@ import { buildVodPanelMarkup } from './vod.panel.template';
         }
 
         bindVideoListeners();
-        const first = E.applyVodPlaybackRate(targetRate);
+        const first =
+            typeof E.applyVodPlaybackMode === 'function'
+                ? E.applyVodPlaybackMode(targetRate)
+                : E.applyVodPlaybackRate(targetRate);
         if (!first.applied) {
             // 플레이어 초기화 지연 대비: 짧은 시간 동안 재시도
             let retries = 0;
             const timer = setInterval(() => {
                 retries += 1;
-                const next = E.applyVodPlaybackRate(targetRate);
+                const next =
+                    typeof E.applyVodPlaybackMode === 'function'
+                        ? E.applyVodPlaybackMode(targetRate)
+                        : E.applyVodPlaybackRate(targetRate);
                 if (next.applied || retries >= 12) {
                     clearInterval(timer);
                 }

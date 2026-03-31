@@ -35,22 +35,13 @@ export function buildVodPanelMarkup(
                     aria-label="강의 다운로드"
                 ><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v11m0 0l-4-4m4 4l4-4M5 21h14"/></svg></button>
             </div>
-            <div class="ecdash-vod-seek-actions">
-                <button
-                    type="button"
-                    id="ecdash-vod-seek-back"
-                    class="ecdash-vod-seek-btn"
-                    aria-label="5초 뒤로 이동"
-                    title="5초 뒤로"
-                ><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 8L7 12l4 4M17 8l-4 4 4 4"/></svg></button>
-                <button
-                    type="button"
-                    id="ecdash-vod-seek-forward"
-                    class="ecdash-vod-seek-btn"
-                    aria-label="5초 앞으로 이동"
-                    title="5초 앞으로"
-                ><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 8l4 4-4 4M7 8l4 4-4 4"/></svg></button>
-            </div>
+            <button
+                type="button"
+                id="ecdash-vod-speed-max"
+                class="ecdash-vod-turbo-button"
+                aria-label="1000배속 스킵 모드"
+                title="1000배속 스킵 모드"
+            >1000배속 스킵</button>
             <div id="${menuId}" class="ecdash-vod-speed-menu" role="listbox" hidden></div>
             <div class="ecdash-vod-speed-hint">Alt+, 느리게 · Alt+. 빠르게 · Alt+/ 기본속도</div>
         </div>
