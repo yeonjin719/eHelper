@@ -2,6 +2,7 @@
 (() => {
     const E = window.__ECDASH__;
     if (!E) return;
+    if (E.isBlockedPage?.()) return;
 
     // 진입 오케스트레이터: 캐시 초기화, 크롤링 스케줄링, 자동 새로고침.
     let inFlight = false;

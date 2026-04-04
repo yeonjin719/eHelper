@@ -58,6 +58,15 @@
         }
     };
 
+    E.isBlockedPage = function isBlockedPage(pageLocation = location) {
+        try {
+            const pathname = String(pageLocation?.pathname || '').toLowerCase();
+            return pathname === '/login.php';
+        } catch {
+            return false;
+        }
+    };
+
     E.resolveUrl = function resolveUrl(url, baseUrl) {
         const raw = E.cleanText(url || '');
         if (!raw) return '';

@@ -11,6 +11,7 @@ import {
 (() => {
     // React UI 설치 진입점: 런타임 초기화 후 루트 마운트와 공개 API를 연결한다.
     const runtime = (window.__ECDASH__ = window.__ECDASH__ || {});
+    if (runtime.isBlockedPage?.()) return;
 
     initializeRuntimeState(runtime);
     const store = createUiStore(runtime);

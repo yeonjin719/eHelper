@@ -9,7 +9,8 @@
         storagePrefix: 'ecdash:smu',
         hostPatterns: [/^ecampus\.smu\.ac\.kr$/i],
         match: ({ location: pageLocation }) =>
-            /^ecampus\.smu\.ac\.kr$/i.test(pageLocation.hostname || ''),
+            /^ecampus\.smu\.ac\.kr$/i.test(pageLocation.hostname || '') &&
+            !E.isBlockedPage?.(pageLocation),
         isDashboardPage: () => Boolean(E.isDashboardSMU?.()),
         collectDashboardCourses: () =>
             E.collectCoursesFromDashboardSMU?.() || [],
