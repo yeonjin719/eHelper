@@ -494,6 +494,22 @@ export function selectFilteredItems(state: UiState) {
             return false;
         }
 
+        if (
+            state.hideDoneLectures &&
+            item.type === 'LECTURE' &&
+            getEffectiveItemStatus(item) === 'DONE'
+        ) {
+            return false;
+        }
+
+        if (
+            state.hideDoneAssignments &&
+            (item.type === 'ASSIGNMENT' || item.type === 'QUIZ') &&
+            getEffectiveItemStatus(item) === 'DONE'
+        ) {
+            return false;
+        }
+
         if (!selectedFilters.length) return true;
 
         const matchesFilter = selectedFilters.some((filterValue) => {

@@ -1,5 +1,4 @@
 import { DUE_FILTER_OPTIONS, TYPE_FILTER_OPTIONS } from './constants';
-import { DASHBOARD_SHELL_STYLES as styles } from './styles';
 
 interface DashboardFilterBarProps {
     filter: string[];
@@ -42,11 +41,11 @@ export function DashboardFilterBar({
     const isNotDoneFilterActive = selectedDueFilter === 'NOT_DONE';
 
     return (
-        <div className={styles.filterSection}>
-            <div className={styles.filterSelectGrid}>
+        <div className="space-y-2 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3">
+            <div className="grid grid-cols-2 gap-2">
                 <select
                     id="ecdash-due-filter"
-                    className={styles.dropdown}
+                    className="h-9 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-[12px] font-medium text-zinc-700 outline-none transition focus-visible:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-100"
                     value={selectedDueFilter}
                     onChange={(event) => {
                         const value = event.target.value;
@@ -62,7 +61,7 @@ export function DashboardFilterBar({
 
                 <select
                     id="ecdash-course-filter"
-                    className={styles.dropdown}
+                    className="h-9 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-[12px] font-medium text-zinc-700 outline-none transition focus-visible:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-100"
                     value={courseFilter}
                     onChange={(event) => {
                         onSelectCourse(event.target.value);
@@ -78,14 +77,14 @@ export function DashboardFilterBar({
                 </select>
             </div>
 
-            <div className={styles.filterChipRow}>
+            <div className="flex flex-wrap items-center gap-1.5">
                 <button
                     type="button"
                     className={[
-                        styles.filterChipBase,
+                        'inline-flex h-8 items-center rounded-full border px-3 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
                         !typeFilter.length
-                            ? styles.filterChipActive
-                            : styles.filterChipInactive,
+                            ? 'border-sky-300 bg-sky-50 text-sky-700 focus:bg-sky-50 focus:border-sky-300 focus:text-sky-700 active:bg-sky-50'
+                            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50 focus:bg-white focus:border-zinc-200 focus:text-zinc-600 active:bg-white',
                     ].join(' ')}
                     onClick={() => {
                         onTypeFilterChange([]);
@@ -97,10 +96,10 @@ export function DashboardFilterBar({
                 <button
                     type="button"
                     className={[
-                        styles.filterChipBase,
+                        'inline-flex h-8 items-center rounded-full border px-3 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
                         isNotDoneFilterActive
-                            ? styles.filterChipActive
-                            : styles.filterChipInactive,
+                            ? 'border-sky-300 bg-sky-50 text-sky-700 focus:bg-sky-50 focus:border-sky-300 focus:text-sky-700 active:bg-sky-50'
+                            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50 focus:bg-white focus:border-zinc-200 focus:text-zinc-600 active:bg-white',
                     ].join(' ')}
                     onClick={() => {
                         onFilterChange(
@@ -116,10 +115,10 @@ export function DashboardFilterBar({
                         key={option.value}
                         type="button"
                         className={[
-                            styles.filterChipBase,
+                            'inline-flex h-8 items-center rounded-full border px-3 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
                             typeFilterSet.has(option.value)
-                                ? styles.filterChipActive
-                                : styles.filterChipInactive,
+                                ? 'border-sky-300 bg-sky-50 text-sky-700 focus:bg-sky-50 focus:border-sky-300 focus:text-sky-700 active:bg-sky-50'
+                                : 'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50 focus:bg-white focus:border-zinc-200 focus:text-zinc-600 active:bg-white',
                         ].join(' ')}
                         onClick={() => {
                             toggleMultiValue(

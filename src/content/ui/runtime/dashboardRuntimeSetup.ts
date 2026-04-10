@@ -2,6 +2,8 @@ import {
     COURSE_FILTER_ALL,
     UI_COLLAPSED_KEY,
     UI_HIDDEN_ITEM_IDS_KEY,
+    UI_HIDE_DONE_ASSIGNMENTS_KEY,
+    UI_HIDE_DONE_LECTURES_KEY,
     UI_HIDE_PAST_ASSIGNMENTS_KEY,
     UI_HIDE_PAST_FORUMS_KEY,
     UI_HIDE_PAST_LECTURES_KEY,
@@ -24,6 +26,8 @@ export function initializeRuntimeState(runtime: DashboardRuntime) {
     runtime.__hidePastLectures = Boolean(runtime.__hidePastLectures);
     runtime.__hidePastAssignments = Boolean(runtime.__hidePastAssignments);
     runtime.__hidePastForums = Boolean(runtime.__hidePastForums);
+    runtime.__hideDoneLectures = Boolean(runtime.__hideDoneLectures);
+    runtime.__hideDoneAssignments = Boolean(runtime.__hideDoneAssignments);
     runtime.__includeSmClass = Boolean(runtime.__includeSmClass);
     runtime.__hiddenItemIds = normalizeHiddenItemIds(runtime.__hiddenItemIds);
     runtime.__lastBadge = cleanText(runtime.__lastBadge || '');
@@ -43,6 +47,8 @@ export function createUiStore(runtime: DashboardRuntime) {
         hidePastLectures: Boolean(runtime.__hidePastLectures),
         hidePastAssignments: Boolean(runtime.__hidePastAssignments),
         hidePastForums: Boolean(runtime.__hidePastForums),
+        hideDoneLectures: Boolean(runtime.__hideDoneLectures),
+        hideDoneAssignments: Boolean(runtime.__hideDoneAssignments),
         includeSmClass: Boolean(runtime.__includeSmClass),
         collapsed: false,
         loading: Boolean(runtime.__isLoading),
@@ -64,6 +70,8 @@ export async function applyInitialStateFromStorage(
             UI_HIDE_PAST_LECTURES_KEY,
             UI_HIDE_PAST_ASSIGNMENTS_KEY,
             UI_HIDE_PAST_FORUMS_KEY,
+            UI_HIDE_DONE_LECTURES_KEY,
+            UI_HIDE_DONE_ASSIGNMENTS_KEY,
             UI_INCLUDE_SM_CLASS_KEY,
             UI_HIDDEN_ITEM_IDS_KEY,
         ]);
@@ -74,6 +82,10 @@ export async function applyInitialStateFromStorage(
             res?.[UI_HIDE_PAST_ASSIGNMENTS_KEY],
         );
         const nextHidePastForums = Boolean(res?.[UI_HIDE_PAST_FORUMS_KEY]);
+        const nextHideDoneLectures = Boolean(res?.[UI_HIDE_DONE_LECTURES_KEY]);
+        const nextHideDoneAssignments = Boolean(
+            res?.[UI_HIDE_DONE_ASSIGNMENTS_KEY],
+        );
         const nextIncludeSmClass = Boolean(res?.[UI_INCLUDE_SM_CLASS_KEY]);
         const nextHiddenItemIds = normalizeHiddenItemIds(
             res?.[UI_HIDDEN_ITEM_IDS_KEY],
@@ -82,6 +94,8 @@ export async function applyInitialStateFromStorage(
         runtime.__hidePastLectures = nextHidePastLectures;
         runtime.__hidePastAssignments = nextHidePastAssignments;
         runtime.__hidePastForums = nextHidePastForums;
+        runtime.__hideDoneLectures = nextHideDoneLectures;
+        runtime.__hideDoneAssignments = nextHideDoneAssignments;
         runtime.__includeSmClass = nextIncludeSmClass;
         runtime.__hiddenItemIds = nextHiddenItemIds;
 
@@ -90,6 +104,8 @@ export async function applyInitialStateFromStorage(
             hidePastLectures: nextHidePastLectures,
             hidePastAssignments: nextHidePastAssignments,
             hidePastForums: nextHidePastForums,
+            hideDoneLectures: nextHideDoneLectures,
+            hideDoneAssignments: nextHideDoneAssignments,
             includeSmClass: nextIncludeSmClass,
             hiddenItemIds: nextHiddenItemIds,
         });
@@ -116,6 +132,8 @@ export function syncStoreFromRuntime(
         hidePastLectures: Boolean(runtime.__hidePastLectures),
         hidePastAssignments: Boolean(runtime.__hidePastAssignments),
         hidePastForums: Boolean(runtime.__hidePastForums),
+        hideDoneLectures: Boolean(runtime.__hideDoneLectures),
+        hideDoneAssignments: Boolean(runtime.__hideDoneAssignments),
         includeSmClass: Boolean(runtime.__includeSmClass),
         hiddenItemIds: normalizeHiddenItemIds(runtime.__hiddenItemIds),
     });

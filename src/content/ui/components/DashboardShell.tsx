@@ -2,7 +2,6 @@ import { DashboardFilterBar } from './dashboardShell/DashboardFilterBar';
 import { DashboardFooter } from './dashboardShell/DashboardFooter';
 import { DashboardHeader } from './dashboardShell/DashboardHeader';
 import { DashboardSettingsModal } from './dashboardShell/DashboardSettingsModal';
-import { DASHBOARD_SHELL_STYLES as styles } from './dashboardShell/styles';
 import type { DashboardShellProps } from './dashboardShell/types';
 
 export function DashboardShell({
@@ -22,6 +21,8 @@ export function DashboardShell({
     hidePastLectures,
     hidePastAssignments,
     hidePastForums,
+    hideDoneLectures,
+    hideDoneAssignments,
     includeSmClass,
     hiddenItemCount,
     hiddenItems,
@@ -35,6 +36,8 @@ export function DashboardShell({
     onHidePastLecturesChange,
     onHidePastAssignmentsChange,
     onHidePastForumsChange,
+    onHideDoneLecturesChange,
+    onHideDoneAssignmentsChange,
     onIncludeSmClassChange,
     onUnhideItem,
     onResetHiddenItems,
@@ -43,11 +46,13 @@ export function DashboardShell({
     const settingsVisible = settingsOpen && !collapsed && isDashboardPage;
 
     return (
-        <div className={styles.root}>
+        <div className="fixed right-2 top-4 z-[999999] [font-family:'Pretendard',sans-serif] md:right-4">
             <section
                 className={[
-                    styles.panelBase,
-                    collapsed ? styles.panelCollapsed : styles.panelExpanded,
+                    'overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.08)]',
+                    collapsed
+                        ? 'h-14 w-14'
+                        : 'flex max-h-[calc(100vh-20px)] w-[min(468px,calc(100vw-16px))] flex-col md:w-[min(468px,calc(100vw-32px))]',
                 ].join(' ')}
             >
                 <DashboardHeader
@@ -61,7 +66,7 @@ export function DashboardShell({
                 />
 
                 {!collapsed && (
-                    <div className={styles.contentLayout}>
+                    <div className="flex min-h-0 flex-1 flex-col">
                         <DashboardFilterBar
                             filter={filter}
                             typeFilter={typeFilter}
@@ -74,7 +79,10 @@ export function DashboardShell({
                             onSelectCourse={onSelectCourse}
                         />
 
-                        <main id="ecdash-list" className={styles.list}>
+                        <main
+                            id="ecdash-list"
+                            className="ecdash-scroll min-h-0 max-h-[50vh] flex-1 overflow-y-auto bg-[#f9fafb] px-4 py-3"
+                        >
                             {children}
                         </main>
 
@@ -89,6 +97,8 @@ export function DashboardShell({
                     hidePastLectures={hidePastLectures}
                     hidePastAssignments={hidePastAssignments}
                     hidePastForums={hidePastForums}
+                    hideDoneLectures={hideDoneLectures}
+                    hideDoneAssignments={hideDoneAssignments}
                     includeSmClass={includeSmClass}
                     hiddenItemCount={hiddenItemCount}
                     hiddenItems={hiddenItems}
@@ -96,6 +106,8 @@ export function DashboardShell({
                     onHidePastLecturesChange={onHidePastLecturesChange}
                     onHidePastAssignmentsChange={onHidePastAssignmentsChange}
                     onHidePastForumsChange={onHidePastForumsChange}
+                    onHideDoneLecturesChange={onHideDoneLecturesChange}
+                    onHideDoneAssignmentsChange={onHideDoneAssignmentsChange}
                     onIncludeSmClassChange={onIncludeSmClassChange}
                     onUnhideItem={onUnhideItem}
                     onResetHiddenItems={onResetHiddenItems}

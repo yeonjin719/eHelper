@@ -31,6 +31,8 @@ export interface DashboardShellProps {
     hidePastLectures: boolean;
     hidePastAssignments: boolean;
     hidePastForums: boolean;
+    hideDoneLectures: boolean;
+    hideDoneAssignments: boolean;
     includeSmClass: boolean;
     hiddenItemCount: number;
     hiddenItems: HiddenItemPreview[];
@@ -44,6 +46,8 @@ export interface DashboardShellProps {
     onHidePastLecturesChange: (checked: boolean) => void | Promise<void>;
     onHidePastAssignmentsChange: (checked: boolean) => void | Promise<void>;
     onHidePastForumsChange: (checked: boolean) => void | Promise<void>;
+    onHideDoneLecturesChange: (checked: boolean) => void | Promise<void>;
+    onHideDoneAssignmentsChange: (checked: boolean) => void | Promise<void>;
     onIncludeSmClassChange: (checked: boolean) => void | Promise<void>;
     onUnhideItem: (itemId: string) => void | Promise<void>;
     onResetHiddenItems: () => void | Promise<void>;

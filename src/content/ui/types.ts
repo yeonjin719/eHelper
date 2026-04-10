@@ -33,6 +33,8 @@ export interface UiState {
     hidePastLectures: boolean;
     hidePastAssignments: boolean;
     hidePastForums: boolean;
+    hideDoneLectures: boolean;
+    hideDoneAssignments: boolean;
     includeSmClass: boolean;
     collapsed: boolean;
     loading: boolean;

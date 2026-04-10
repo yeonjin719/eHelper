@@ -3,6 +3,8 @@ import {
     COURSE_FILTER_ALL,
     UI_COLLAPSED_KEY,
     UI_HIDDEN_ITEM_IDS_KEY,
+    UI_HIDE_DONE_ASSIGNMENTS_KEY,
+    UI_HIDE_DONE_LECTURES_KEY,
     UI_HIDE_PAST_ASSIGNMENTS_KEY,
     UI_HIDE_PAST_FORUMS_KEY,
     UI_HIDE_PAST_LECTURES_KEY,
@@ -227,6 +229,8 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
             hidePastLectures={state.hidePastLectures}
             hidePastAssignments={state.hidePastAssignments}
             hidePastForums={state.hidePastForums}
+            hideDoneLectures={state.hideDoneLectures}
+            hideDoneAssignments={state.hideDoneAssignments}
             includeSmClass={state.includeSmClass}
             hiddenItemCount={state.hiddenItemIds.length}
             hiddenItems={hiddenItems}
@@ -288,6 +292,28 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
                 try {
                     await chrome.storage?.local?.set?.({
                         [UI_HIDE_PAST_FORUMS_KEY]: checked,
+                    });
+                } catch {
+                    // ignore
+                }
+            }}
+            onHideDoneLecturesChange={async (checked) => {
+                runtime.__hideDoneLectures = checked;
+                store.setState({ hideDoneLectures: checked });
+                try {
+                    await chrome.storage?.local?.set?.({
+                        [UI_HIDE_DONE_LECTURES_KEY]: checked,
+                    });
+                } catch {
+                    // ignore
+                }
+            }}
+            onHideDoneAssignmentsChange={async (checked) => {
+                runtime.__hideDoneAssignments = checked;
+                store.setState({ hideDoneAssignments: checked });
+                try {
+                    await chrome.storage?.local?.set?.({
+                        [UI_HIDE_DONE_ASSIGNMENTS_KEY]: checked,
                     });
                 } catch {
                     // ignore
