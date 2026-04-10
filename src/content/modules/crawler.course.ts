@@ -361,6 +361,24 @@
                 });
                 if (!res.ok)
                     throw new Error(`Fetch failed ${res.status}: ${url}`);
+                const finalUrl = String(res.url || url);
+                const contentType = String(
+                    res.headers.get('content-type') || '',
+                ).toLowerCase();
+                const isPluginFileResponse =
+                    finalUrl.toLowerCase().includes('/pluginfile.php');
+                const isHtmlLikeResponse =
+                    !contentType ||
+                    contentType.includes('text/html') ||
+                    contentType.includes('application/xhtml+xml');
+
+                // 자료 리소스가 파일 원본으로 리다이렉트되면 본문 전체를 text()로 읽지 않는다.
+                if (isPluginFileResponse || !isHtmlLikeResponse) {
+                    throw new Error(
+                        `Non-HTML response ${contentType || 'unknown'}: ${finalUrl}`,
+                    );
+                }
+
                 return await res.text();
             } catch (err) {
                 lastErr = err;

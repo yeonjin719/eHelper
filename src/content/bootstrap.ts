@@ -6,8 +6,6 @@
 
     // 진입 오케스트레이터: 캐시 초기화, 크롤링 스케줄링, 자동 새로고침.
     let inFlight = false;
-    let lastCourseSignature = '';
-    let autoRefreshTimer = null;
     const storagePrefix =
         (typeof E.getStoragePrefix === 'function'
             ? E.getStoragePrefix('ecdash:smu')
@@ -168,32 +166,6 @@
         return Array.isArray(fallback) ? fallback : [];
     }
 
-    function getCourseSignature() {
-        const signatureFromAdapter = E.getDashboardCourseSignature?.({
-            includeSmClass: Boolean(E.__includeSmClass),
-        });
-        if (signatureFromAdapter) return signatureFromAdapter;
-
-        if (!isDashboardPage()) return '';
-        const courses = collectDashboardCourses();
-        if (!courses.length) return '';
-
-        const { courses: visibleCourses } = getFilteredCourseState(
-            courses,
-            Boolean(E.__includeSmClass),
-        );
-        if (!visibleCourses.length) return '';
-
-        return visibleCourses
-            .map(
-                (c) =>
-                    `${String(c.courseId)}::${E.cleanText(c.courseName || '')}::${c.isNew ? '1' : '0'}`,
-            )
-            .filter(Boolean)
-            .sort()
-            .join(',');
-    }
-
     async function refreshAll({ force = false } = {}) {
         if (inFlight) return;
         inFlight = true;
@@ -257,8 +229,6 @@
                 let excludedCourseIds = new Set();
 
                 if (dashboardCourses.length) {
-                    lastCourseSignature =
-                        getCourseSignature() || lastCourseSignature;
                     await E.saveCourseCache?.(dashboardCourses);
                     setKnownCourses(dashboardCourses);
                     const filtered = getFilteredCourseState(
@@ -474,23 +444,10 @@
         }
 
         E.ensureRoot();
-        const knownCourses = await hydrateKnownCourses();
-
-        if (isProgressPage()) {
-            E.setLoading?.(true, '온라인출석부 데이터를 가져오는 중...');
-            try {
-                const lectureItems = await collectProgressPageItems();
-                window.__ECDASH_ITEMS__ = lectureItems;
-                E.setBadge('OK');
-                E.setSub(
-                    `강의 ${lectureItems.length}개 · 온라인출석부에서 불러옴`,
-                );
-                E.render(lectureItems);
-            } finally {
-                E.setLoading?.(false);
-            }
-            return;
-        }
+        const knownCourses = isDashboardPage()
+            ? await hydrateKnownCourses()
+            : await loadStoredCourseCache();
+        setKnownCourses(knownCourses);
 
         const includeSmClass = await loadIncludeSmClassSetting();
         const snap = await E.loadSnapshot();
@@ -507,41 +464,25 @@
             window.__ECDASH_ITEMS__ = visibleSnapItems;
             E.setBadge('CACHE');
             E.setSub(
-                `${E.summarizeCounts(visibleSnapItems)} · 캐시 표시 중 (↻로 갱신)`,
+                isDashboardPage()
+                    ? `${E.summarizeCounts(visibleSnapItems)} · 캐시 표시 중 (↻로 갱신)`
+                    : `${E.summarizeCounts(visibleSnapItems)} · 저장된 캐시 표시 중 (↻로 갱신)`,
             );
             E.render(visibleSnapItems);
         } else {
             window.__ECDASH_ITEMS__ = [];
-            E.setBadge('READY');
+            E.setBadge(isDashboardPage() ? 'READY' : 'WAIT');
+            E.setSub(
+                isDashboardPage()
+                    ? '대시보드 첫 진입 시 한 번만 자동으로 가져와요.'
+                    : '자동 갱신은 대시보드 첫 진입에서만 실행돼요. ↻로 수동 갱신할 수 있어요.',
+            );
             E.render([]);
         }
 
         if (isDashboardPage()) {
-            lastCourseSignature = getCourseSignature();
-            refreshAll({ force: false });
-        } else {
-            E.setBadge('WAIT');
-            E.setSub('저장된 과목 목록을 기준으로 현재 페이지에서도 갱신해요.');
             refreshAll({ force: false });
         }
-
-        const obs = new MutationObserver(() => {
-            if (!isDashboardPage() || inFlight) return;
-
-            const nextSignature = getCourseSignature();
-            if (!nextSignature || nextSignature === lastCourseSignature) return;
-            lastCourseSignature = nextSignature;
-
-            if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
-            autoRefreshTimer = setTimeout(() => {
-                refreshAll({ force: false });
-            }, 500);
-        });
-
-        obs.observe(document.documentElement, {
-            childList: true,
-            subtree: true,
-        });
     }
 
     boot();
