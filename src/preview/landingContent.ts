@@ -92,9 +92,25 @@ export const previewFixHighlights: LandingFixHighlight[] = [
 
 export const previewReleaseNotes: LandingReleaseNote[] = [
     {
+        version: '1.2.4',
+        date: '2026-04-13',
+        label: 'Latest',
+        title: '랜딩, 크롤링, VOD 흐름 정리',
+        summary:
+            '설치 전 체험용 랜딩/프리뷰를 새로 구성하고, 과목별 증분 갱신과 자료 예외 처리, CMS VOD 대응까지 전체 흐름을 함께 다듬었습니다.',
+        changes: [
+            '랜딩과 프리뷰를 새로 구성하고 업데이트 목록을 리스트형 타임라인으로 정리',
+            '과목별 마지막 실행 시각을 저장해 증분 갱신과 캐시 재사용 지원',
+            '자료/공지 숨김 설정을 수집 단계에 반영하고 pluginfile.php PDF 응답 예외 처리',
+            'cms.smu.ac.kr VOD 뷰어 지원, 패널 위치 저장/드래그, 1000배속 스킵 토글 개선',
+        ],
+        benefit:
+            '설치 전 체험은 더 쉬워지고, 실제 사용 중에는 불필요한 재수집과 오류 로그가 줄며 VOD 조작도 더 안정적입니다.',
+    },
+    {
         version: '1.2.3',
         date: '2026-04-04',
-        label: 'Latest',
+        label: 'Core',
         title: '로그인 페이지 안정화',
         summary:
             '로그인 페이지에 확장 UI가 개입하지 않도록 주입 규칙과 런타임 가드를 함께 정리했습니다.',

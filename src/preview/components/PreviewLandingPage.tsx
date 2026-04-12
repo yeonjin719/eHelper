@@ -1,23 +1,41 @@
-import React, { type ReactNode } from 'react';
+import React, { useEffect, type ReactNode } from 'react';
 import { LandingExperienceSection } from './landing/LandingExperienceSection';
 import { LandingFeaturesSection } from './landing/LandingFeaturesSection';
+import { LandingFooter } from './landing/LandingFooter';
 import { LandingHeader } from './landing/LandingHeader';
-import {
-    LandingHeroSection,
-    type LandingHeroCard,
-} from './landing/LandingHeroSection';
-import { LandingImprovementsSection } from './landing/LandingImprovementsSection';
+import { LandingHeroSection } from './landing/LandingHeroSection';
 import { LandingVersionsSection } from './landing/LandingVersionsSection';
+import { scrollToLandingHash } from './landing/landingShared';
 
 interface PreviewLandingPageProps {
-    canvasCards: LandingHeroCard[];
     children: ReactNode;
 }
 
-export function PreviewLandingPage({
-    canvasCards,
-    children,
-}: PreviewLandingPageProps) {
+export function PreviewLandingPage({ children }: PreviewLandingPageProps) {
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const syncHashScroll = (behavior: ScrollBehavior) => {
+            if (!window.location.hash) return;
+
+            window.requestAnimationFrame(() => {
+                scrollToLandingHash(window.location.hash, behavior);
+            });
+        };
+
+        syncHashScroll('auto');
+
+        const handleHashChange = () => {
+            syncHashScroll('smooth');
+        };
+
+        window.addEventListener('hashchange', handleHashChange);
+
+        return () => {
+            window.removeEventListener('hashchange', handleHashChange);
+        };
+    }, []);
+
     return (
         <div className="relative overflow-hidden text-slate-50 bg-[linear-gradient(135deg,#050a16_0%,#0a1630_50%,#051020_100%)]">
             <div className="pointer-events-none absolute inset-0">
@@ -27,17 +45,17 @@ export function PreviewLandingPage({
                 <div className="absolute right-[15%] bottom-[-5%] h-[480px] w-[480px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.15)_0%,rgba(59,130,246,0)_70%)] blur-3xl" />
             </div>
 
-            <div className="relative flex flex-col">
+            <div id="top" className="relative flex flex-col">
                 <LandingHeader />
                 <main className="flex flex-col gap-44 pb-32 pt-16 px-[30px] md:pt-24 md:px-[40px] lg:px-[60px]">
-                    <LandingHeroSection canvasCards={canvasCards} />
+                    <LandingHeroSection />
                     <LandingFeaturesSection />
-                    <LandingImprovementsSection />
                     <LandingVersionsSection />
                     <LandingExperienceSection>
                         {children}
                     </LandingExperienceSection>
                 </main>
+                <LandingFooter />
             </div>
         </div>
     );

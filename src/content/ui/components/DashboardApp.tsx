@@ -63,6 +63,10 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
         () => Boolean(runtime.isDashboardPage?.() ?? runtime.isDashboardSMU?.()),
         [runtime, locationHref],
     );
+    const isVodPlayerPage = useMemo(
+        () => Boolean(runtime.isVodPlayerPage?.()),
+        [runtime, locationHref],
+    );
 
     const allCourses = useMemo(
         () => collectCourseNames(runtime, state.items, state.includeSmClass),
@@ -101,6 +105,12 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
     }, [isDashboardPage, state.settingsOpen, store]);
 
     useEffect(() => {
+        if (isVodPlayerPage && state.settingsOpen) {
+            store.setState({ settingsOpen: false });
+        }
+    }, [isVodPlayerPage, state.settingsOpen, store]);
+
+    useEffect(() => {
         const nextTypeFilter = state.typeFilter.filter((type) => {
             if (state.hideResources && type === 'RESOURCE') return false;
             if (state.hideNotices && type === 'NOTICE') return false;
@@ -124,6 +134,10 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
         [state.sub],
     );
     const isMockMode = state.devDataSource === 'mock';
+
+    if (isVodPlayerPage) {
+        return null;
+    }
 
     return (
         <>
@@ -260,6 +274,10 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
                         runtimeKey: '__hideResources',
                         stateKey: 'hideResources',
                     });
+
+                    if (!checked && typeof runtime.refreshAll === 'function') {
+                        runtime.refreshAll({ force: true });
+                    }
                 }}
                 onHideNoticesChange={async (checked) => {
                     if (isMockMode) {
@@ -274,6 +292,10 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
                         runtimeKey: '__hideNotices',
                         stateKey: 'hideNotices',
                     });
+
+                    if (!checked && typeof runtime.refreshAll === 'function') {
+                        runtime.refreshAll({ force: true });
+                    }
                 }}
                 onIncludeSmClassChange={async (checked) => {
                     if (isMockMode) {

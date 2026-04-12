@@ -20,6 +20,7 @@ export function DashboardItemCard({
     runtime,
     onHideItem,
 }: DashboardItemCardProps) {
+    const canOpenItem = Boolean(item.url) && !runtime.__disableItemNavigation;
     const {
         detailMetaLines,
         extraMetaLines,
@@ -29,23 +30,23 @@ export function DashboardItemCard({
     } = buildDashboardItemCardMeta(item, runtime);
     const typeLabel = runtime.TYPE_LABEL?.[item.type] || item.type;
     const openItem = () => {
-        if (item.url) {
+        if (canOpenItem && item.url) {
             window.open(item.url, '_blank');
         }
     };
 
     return (
         <div
-            role="button"
-            tabIndex={0}
+            role={canOpenItem ? 'button' : undefined}
+            tabIndex={canOpenItem ? 0 : undefined}
             className={[
                 'w-full relative rounded-xl border px-3 py-3 text-left shadow-[0_4px_10px_rgba(15,23,42,0.05)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
+                canOpenItem ? 'cursor-pointer' : 'cursor-default',
                 itemCardToneClass(item.type),
             ].join(' ')}
-            onClick={() => {
-                openItem();
-            }}
+            onClick={canOpenItem ? openItem : undefined}
             onKeyDown={(event) => {
+                if (!canOpenItem) return;
                 if (event.target !== event.currentTarget) return;
                 if (event.key !== 'Enter' && event.key !== ' ') return;
                 event.preventDefault();

@@ -22,6 +22,11 @@ import {
         E.constants?.VOD_PANEL_POSITION_KEY || 'ecdash:smu:vod:panelPosition';
     const VOD_PANEL_VIEWPORT_MARGIN = 8;
 
+    function getPersistableVodRate(rate) {
+        const current = E.closestVodSpeedOption(rate);
+        return current === VOD_TURBO_RATE ? 1 : current;
+    }
+
     function formatVodSpeedLabel(rate) {
         const current = E.closestVodSpeedOption(rate);
         return Number.isInteger(current) ? `${current}x` : `${current.toFixed(2)}x`;
@@ -333,7 +338,9 @@ import {
 
         const persistRate = async (rate) => {
             try {
-                await E.setSync({ [E.constants.VOD_PLAYBACK_RATE_KEY]: rate });
+                await E.setSync({
+                    [E.constants.VOD_PLAYBACK_RATE_KEY]: getPersistableVodRate(rate),
+                });
             } catch (_) {
                 // 무시
             }
@@ -496,7 +503,10 @@ import {
             }
         };
 
-        const vodRoot = document.getElementById('vod_player');
+        const vodRoot =
+            typeof E.findVodObserverRoot === 'function'
+                ? E.findVodObserverRoot(document)
+                : document.getElementById('vod_player');
         if (vodRoot) {
             const speedObserver = new MutationObserver(() => {
                 bindVideoListeners();
@@ -514,7 +524,7 @@ import {
             speedObserver.observe(vodRoot, {
                 childList: true,
                 subtree: true,
-                attributes: true,
+                attributes: vodRoot.id === 'vod_player',
             });
         }
 

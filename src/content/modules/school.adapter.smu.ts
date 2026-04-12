@@ -7,7 +7,7 @@
         id: 'smu',
         label: 'SMU eCampus',
         storagePrefix: 'ecdash:smu',
-        hostPatterns: [/^ecampus\.smu\.ac\.kr$/i],
+        hostPatterns: [/^ecampus\.smu\.ac\.kr$/i, /^cms\.smu\.ac\.kr$/i],
         match: ({ location: pageLocation }) =>
             /^ecampus\.smu\.ac\.kr$/i.test(pageLocation.hostname || '') &&
             !E.isBlockedPage?.(pageLocation),

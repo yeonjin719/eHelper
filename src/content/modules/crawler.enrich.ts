@@ -2,6 +2,31 @@
 (() => {
     // 상세 페이지 보강 모듈: 포럼/자료의 상태와 메타를 보강한다.
     const E = window.__ECDASH__;
+    const hasDueInfo = (item) => typeof item?.dueAt === 'number';
+    const hasMetaText = (item) => Boolean(E.cleanText(item?.meta || ''));
+    const needsDetailEnrichment = (item) =>
+        !hasDueInfo(item) || item?.status === 'UNKNOWN' || !hasMetaText(item);
+    const NON_HTML_RESPONSE_RE =
+        /^Non-HTML response\s+(.+?):\s+(https?:\/\/\S+)$/i;
+    const isDirectFileResourceResponse = (err) => {
+        const message = E.cleanText(err?.message || err || '');
+        const match = message.match(NON_HTML_RESPONSE_RE);
+        if (!match) return false;
+
+        const [, contentTypeRaw, finalUrlRaw] = match;
+        const contentType = String(contentTypeRaw || '').toLowerCase();
+        const finalUrl = String(finalUrlRaw || '').toLowerCase();
+
+        return (
+            finalUrl.includes('/pluginfile.php') ||
+            contentType.includes('application/pdf') ||
+            contentType.includes('application/octet-stream') ||
+            contentType.startsWith('image/') ||
+            contentType.startsWith('video/') ||
+            contentType.startsWith('audio/')
+        );
+    };
+
     // 상세 페이지에서 마감/기간 관련 텍스트를 추출해 공통 메타로 변환한다.
     E.extractDueMetaFromDoc = function extractDueMetaFromDoc(doc) {
         // 점검 필요: 현재 테마/페이지 구조에 맞춰 조정할 상세 페이지 마감/기간 셀렉터
@@ -269,6 +294,10 @@
     // 포럼 아이템에 참여 상태와 메타를 병합한다.
     E.enrichForumItems = async function enrichForumItems(items, limit = 1) {
         return await E.mapWithConcurrency(items, limit, async (item) => {
+            if (!needsDetailEnrichment(item)) {
+                return item;
+            }
+
             try {
                 const html = await E.fetchHtml(item.url);
                 const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -302,6 +331,10 @@
         limit = 1,
     ) {
         return await E.mapWithConcurrency(items, limit, async (item) => {
+            if (!needsDetailEnrichment(item)) {
+                return item;
+            }
+
             try {
                 const html = await E.fetchHtml(item.url);
                 const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -329,6 +362,10 @@
 
     E.enrichQuizItems = async function enrichQuizItems(items, limit = 1) {
         return await E.mapWithConcurrency(items, limit, async (item) => {
+            if (!needsDetailEnrichment(item)) {
+                return item;
+            }
+
             try {
                 const html = await E.fetchHtml(item.url);
                 const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -356,6 +393,10 @@
         limit = 1,
     ) {
         return await E.mapWithConcurrency(items, limit, async (item) => {
+            if (!needsDetailEnrichment(item)) {
+                return item;
+            }
+
             try {
                 const html = await E.fetchHtml(item.url);
                 const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -383,6 +424,10 @@
                     meta: item.meta || detail.meta,
                 };
             } catch (err) {
+                if (isDirectFileResourceResponse(err)) {
+                    return item;
+                }
+
                 console.warn(
                     '[ECDASH] resource detail crawl failed:',
                     item.url,

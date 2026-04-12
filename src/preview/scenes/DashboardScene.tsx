@@ -102,7 +102,7 @@ export function DashboardScene({
     } as const;
 
     return (
-        <div className="grid min-h-[calc(100vh-208px)] xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid min-h-[calc(100vh-208px)] xl:grid-cols-[minmax(0,1fr)_260px]">
             <section className="bg-[#f3f3f5] px-8 py-7 xl:px-14">
                 <div className="mb-6 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
@@ -113,21 +113,6 @@ export function DashboardScene({
                             size={18}
                             className="mt-1 text-slate-400"
                         />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {snapshotApplied ? (
-                            <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-700 xl:inline-flex">
-                                스타일 스냅샷 적용됨
-                            </span>
-                        ) : null}
-                        <button
-                            type="button"
-                            className="flex h-[46px] w-[46px] items-center justify-center border border-[#d7dbe2] bg-white text-[#9299a6] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
-                            aria-label="페이지 설정"
-                        >
-                            <LuSettings size={21} />
-                        </button>
                     </div>
                 </div>
 
@@ -195,7 +180,7 @@ export function DashboardScene({
             <aside className="border-l border-[#d6dbe3] bg-white">
                 <section className="border-b border-[#dfe3e8] px-7 py-6">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-[#29438d]">
+                        <h3 className="text-[18px] m-0 font-semibold tracking-[-0.02em] text-[#29438d]">
                             중요공지
                         </h3>
                         <span className="text-[24px] leading-none text-slate-300">
@@ -203,14 +188,14 @@ export function DashboardScene({
                         </span>
                     </div>
 
-                    <div className="relative mt-8 space-y-8">
+                    <div className="relative space-y-5">
                         <div className="absolute bottom-0 left-[28px] top-0 w-px bg-[#eceff3]" />
                         {notices.map((notice) => (
                             <article
                                 key={notice.title}
                                 className="relative min-h-[70px] items-center w-full flex gap-4"
                             >
-                                <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-[#dde2e8] bg-zinc-100 text-[#9da4ae] shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                                <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-[#dde2e8] bg-zinc-100 text-[#9da4ae] shadow-[0_1px_0_rgba(255,255,255,0.8)]">
                                     <LuLockKeyhole size={22} />
                                 </div>
                                 <div className="flex flex-col">
@@ -234,7 +219,7 @@ export function DashboardScene({
                     </button>
                 </section>
 
-                <section className="px-7 py-6">
+                <section className="px-4 py-6">
                     <div className="flex items-center justify-between">
                         <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-[#29438d]">
                             예정된 할일
@@ -247,13 +232,13 @@ export function DashboardScene({
                         </span>
                     </div>
 
-                    <div className="mt-8 space-y-8">
+                    <div className="space-y-5">
                         {schedules.map((schedule) => (
                             <article
                                 key={schedule.title}
                                 className="relative min-h-[66px] items-center w-full flex gap-4"
                             >
-                                <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-zinc-400 bg-white text-[#a2a9b4]">
+                                <div className="flex h-[30px] min-w-[30px] items-center justify-center rounded-full border border-zinc-400 bg-white text-[#a2a9b4]">
                                     <LuPlay size={21} />
                                 </div>
                                 <div className="flex flex-col">

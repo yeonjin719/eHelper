@@ -68,6 +68,7 @@ export function createPreviewRuntime(
         normalizeUrl(url: string) {
             return url;
         },
+        __disableItemNavigation: true,
     };
 }
 

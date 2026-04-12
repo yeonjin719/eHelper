@@ -10,8 +10,40 @@
             : [0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4];
     const VOD_TURBO_RATE = 1000;
 
-    E.isVodPlayerPage = function isVodPlayerPage() {
-        return document.getElementById('vod_player') != null;
+    E.isVodViewerPath = function isVodViewerPath(pageLocation = location) {
+        const host = String(pageLocation?.hostname || '').toLowerCase();
+        const pathname = String(pageLocation?.pathname || '').toLowerCase();
+        return (
+            pathname.includes('/mod/vod/viewer.php') ||
+            pathname.includes('/mod/econtents/viewer.php') ||
+            (host === 'cms.smu.ac.kr' && pathname.includes('/labplayer.php'))
+        );
+    };
+
+    E.isVodPlayerPage = function isVodPlayerPage(
+        doc = document,
+        pageLocation = location,
+    ) {
+        if (doc.getElementById('vod_player') != null) return true;
+        return E.isVodViewerPath(pageLocation);
+    };
+
+    E.findVodObserverRoot = function findVodObserverRoot(doc = document) {
+        const explicitRoot =
+            doc.getElementById('vod_player') ||
+            doc.querySelector(
+                '.jwplayer, .jwplayer-container, .video-js, [id*="jwplayer"], [class*="jwplayer"]',
+            );
+        if (explicitRoot instanceof HTMLElement) {
+            return explicitRoot;
+        }
+
+        const video = E.findVodVideoElement?.();
+        if (video?.parentElement instanceof HTMLElement) {
+            return video.parentElement;
+        }
+
+        return doc.body instanceof HTMLElement ? doc.body : null;
     };
 
     E.getSync = async function getSync(keys) {
@@ -509,16 +541,24 @@
 
         const lang = stored[E.constants.VOD_LANG_KEY] === 'en' ? 'en' : 'ko';
         const autoClose = Boolean(stored[E.constants.VOD_AUTO_CLOSE_KEY]);
-        const playbackRate = E.closestVodSpeedOption(
+        const storedPlaybackRate = E.closestVodSpeedOption(
             stored[E.constants.VOD_PLAYBACK_RATE_KEY],
         );
+        const playbackRate =
+            storedPlaybackRate === VOD_TURBO_RATE ? 1 : storedPlaybackRate;
+        if (storedPlaybackRate === VOD_TURBO_RATE) {
+            await E.setSync({ [E.constants.VOD_PLAYBACK_RATE_KEY]: playbackRate });
+        }
         const languageSet = E.getVodLanguageSet(lang);
 
         const baseTitle = E.stripVodTitleStatePrefix(document.title);
         document.title = languageSet[0] + baseTitle;
 
-        const target = document.getElementById('vod_player');
-        if (!target) return;
+        const titleStateTarget =
+            document.getElementById('vod_player') ||
+            document.querySelector(
+                '.jwplayer, .jwplayer-container, [id*="jwplayer"], [class*="jwplayer"]',
+            );
 
         if (E.__vodStateObserver) {
             try {
@@ -529,25 +569,27 @@
             E.__vodStateObserver = null;
         }
 
-        const observer = new MutationObserver(() => {
-            const state = Array.from(target.classList).find((c) =>
-                c.startsWith('jw-state-'),
-            );
+        if (titleStateTarget) {
+            const observer = new MutationObserver(() => {
+                const state = Array.from(titleStateTarget.classList).find((c) =>
+                    c.startsWith('jw-state-'),
+                );
 
-            if (state === 'jw-state-paused') {
-                document.title = languageSet[1] + baseTitle;
-            } else if (state === 'jw-state-playing') {
-                document.title = languageSet[2] + baseTitle;
-            } else if (state === 'jw-state-complete') {
-                document.title = languageSet[3] + baseTitle;
-                observer.disconnect();
-                E.__vodStateObserver = null;
-                if (autoClose) E.closeVideoWindowRandomDelay();
-            }
-        });
+                if (state === 'jw-state-paused') {
+                    document.title = languageSet[1] + baseTitle;
+                } else if (state === 'jw-state-playing') {
+                    document.title = languageSet[2] + baseTitle;
+                } else if (state === 'jw-state-complete') {
+                    document.title = languageSet[3] + baseTitle;
+                    observer.disconnect();
+                    E.__vodStateObserver = null;
+                    if (autoClose) E.closeVideoWindowRandomDelay();
+                }
+            });
 
-        E.__vodStateObserver = observer;
-        observer.observe(target, { attributes: true });
+            E.__vodStateObserver = observer;
+            observer.observe(titleStateTarget, { attributes: true });
+        }
 
         // 화면 패널 모듈은 별도 파일에서 로드됨.
         if (typeof E.initVodPlaybackRateControls === 'function') {

@@ -15,9 +15,10 @@ export function VodScene({ scenario }: { scenario: PreviewScenario }) {
                             정보조직론 6주차 온라인 강의
                         </h2>
                         <p className="mt-2 max-w-[760px] text-[14px] leading-6 text-slate-600">
-                            실제 VOD 페이지처럼 플레이어, 재생목록, 안내 패널을
-                            배치하고 좌상단에 재생 컨트롤 패널 프리뷰를
-                            올렸습니다.
+                            재생 컨트롤을 원하는 위치로 옮길 수 있고,
+                            0.75배속부터 1000배속까지 다양한 배속으로 시청할 수
+                            있습니다. <br />
+                            또한, 다운로드 버튼도 제공됩니다.
                         </p>
                     </div>
 

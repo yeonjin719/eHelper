@@ -11,6 +11,8 @@
             ? E.getStoragePrefix('ecdash:smu')
             : 'ecdash:smu') || 'ecdash:smu';
     const UI_INCLUDE_SM_CLASS_KEY = `${storagePrefix}:ui:includeSmClass`;
+    const UI_HIDE_RESOURCES_KEY = `${storagePrefix}:ui:hideResources`;
+    const UI_HIDE_NOTICES_KEY = `${storagePrefix}:ui:hideNotices`;
 
     function setKnownCourses(courses) {
         window.__ECDASH_COURSES__ = E.normalizeCourseCache(courses || []);
@@ -71,6 +73,30 @@
         }
         E.__includeSmClass = includeSmClass;
         return includeSmClass;
+    }
+
+    async function loadCrawlVisibilitySettings() {
+        let hideResources = Boolean(E.__hideResources);
+        let hideNotices = Boolean(E.__hideNotices);
+
+        try {
+            const res = await chrome.storage?.local?.get?.([
+                UI_HIDE_RESOURCES_KEY,
+                UI_HIDE_NOTICES_KEY,
+            ]);
+            hideResources = Boolean(res?.[UI_HIDE_RESOURCES_KEY]);
+            hideNotices = Boolean(res?.[UI_HIDE_NOTICES_KEY]);
+        } catch (_) {
+            // 무시
+        }
+
+        E.__hideResources = hideResources;
+        E.__hideNotices = hideNotices;
+
+        return {
+            hideResources,
+            hideNotices,
+        };
     }
 
     function isDashboardPage() {
@@ -166,6 +192,219 @@
         return Array.isArray(fallback) ? fallback : [];
     }
 
+    function groupItemsByCourseId(items) {
+        const grouped = new Map();
+
+        (Array.isArray(items) ? items : []).forEach((item) => {
+            const courseId = String(item?.courseId || '').trim();
+            if (!courseId) return;
+
+            if (!grouped.has(courseId)) {
+                grouped.set(courseId, []);
+            }
+            grouped.get(courseId).push(item);
+        });
+
+        return grouped;
+    }
+
+    function bindItemsToCourse(items, course) {
+        const courseId = String(course?.courseId || '').trim();
+        if (!courseId) return [];
+
+        const courseName =
+            E.cleanText(course?.courseName || '') || `course-${courseId}`;
+        const courseIsNew = Boolean(course?.isNew ?? course?.courseIsNew);
+
+        return (Array.isArray(items) ? items : []).map((item) => ({
+            ...item,
+            courseId,
+            courseName,
+            courseIsNew,
+        }));
+    }
+
+    async function crawlCoursesWithResults(courses) {
+        if (typeof E.crawlCoursesWithConcurrency === 'function') {
+            const results = await E.crawlCoursesWithConcurrency(courses);
+            return Array.isArray(results) ? results : [];
+        }
+
+        return await E.mapWithConcurrency(
+            courses,
+            E.constants.CRAWL_CONCURRENCY,
+            async (course) => {
+                try {
+                    return {
+                        course,
+                        items: await E.crawlCourseItems(course),
+                        ok: true,
+                    };
+                } catch (err) {
+                    console.warn(
+                        `[ECDASH] cached course crawl skipped. courseId=${course.courseId}`,
+                        err,
+                    );
+                    return {
+                        course,
+                        items: [],
+                        ok: false,
+                    };
+                }
+            },
+        );
+    }
+
+    function describeIncrementalRefresh(plan) {
+        if (plan.crawlCourseCount > 0 && plan.reusedCourseCount > 0) {
+            return `과목 ${plan.crawlCourseCount}개 갱신 중… ${plan.reusedCourseCount}개는 과목 캐시 재사용`;
+        }
+
+        if (plan.crawlCourseCount > 0) {
+            return `과목 ${plan.crawlCourseCount}개 갱신 중…`;
+        }
+
+        if (plan.reusedCourseCount > 0) {
+            return `과목 ${plan.reusedCourseCount}개는 과목 캐시로 바로 표시 중…`;
+        }
+
+        return `과목 ${plan.totalCourseCount}개 기준으로 갱신 중…`;
+    }
+
+    function summarizeRefreshOutcome(items, stats) {
+        const countSummary = E.summarizeCounts(items);
+        const timeLabel = new Date().toLocaleTimeString();
+
+        if (stats.failedCourseCount > 0 && stats.reusedCourseCount > 0) {
+            return `${countSummary} · 일부 과목은 이전 캐시 유지 · ${stats.reusedCourseCount}개 캐시 재사용 · ${timeLabel}`;
+        }
+
+        if (stats.failedCourseCount > 0) {
+            return `${countSummary} · 일부 과목은 이전 캐시 유지 · ${timeLabel}`;
+        }
+
+        if (stats.crawledCourseCount === 0 && stats.reusedCourseCount > 0) {
+            return `${countSummary} · 과목 캐시 ${stats.reusedCourseCount}개 재사용 · ${timeLabel}`;
+        }
+
+        if (stats.reusedCourseCount > 0) {
+            return `${countSummary} · ${stats.crawledCourseCount}개 갱신 / ${stats.reusedCourseCount}개 캐시 재사용 · ${timeLabel}`;
+        }
+
+        return `${countSummary} · 마지막 갱신 ${timeLabel}`;
+    }
+
+    async function collectIncrementalCourseItems(
+        courses,
+        snapshotItems,
+        { force = false, onPlan } = {},
+    ) {
+        const normalized = E.normalizeCourseCache(courses || []);
+        if (!normalized.length) {
+            const emptyPlan = {
+                totalCourseCount: 0,
+                reusedCourseCount: 0,
+                crawlCourseCount: 0,
+            };
+            onPlan?.(emptyPlan);
+            return {
+                items: [],
+                reusedCourseCount: 0,
+                crawledCourseCount: 0,
+                failedCourseCount: 0,
+            };
+        }
+
+        const snapshotItemsByCourse = groupItemsByCourseId(snapshotItems);
+        const courseRunMap = await E.loadCourseRunMap?.();
+        const ttlMs = Math.max(
+            0,
+            Number(E.constants?.COURSE_CACHE_TTL_MS || 0),
+        );
+        const now = Date.now();
+        const reusedItems = [];
+        const coursesToCrawl = [];
+        let reusedCourseCount = 0;
+
+        normalized.forEach((course) => {
+            const courseId = String(course?.courseId || '').trim();
+            const lastRunAt = Number(courseRunMap?.[courseId] || 0);
+            const isFresh =
+                !force &&
+                lastRunAt > 0 &&
+                ttlMs > 0 &&
+                now - lastRunAt < ttlMs;
+
+            if (isFresh) {
+                reusedCourseCount += 1;
+                reusedItems.push(
+                    ...bindItemsToCourse(snapshotItemsByCourse.get(courseId), course),
+                );
+                return;
+            }
+
+            coursesToCrawl.push(course);
+        });
+
+        onPlan?.({
+            totalCourseCount: normalized.length,
+            reusedCourseCount,
+            crawlCourseCount: coursesToCrawl.length,
+        });
+
+        const crawledItems = [];
+        let failedCourseCount = 0;
+
+        if (coursesToCrawl.length) {
+            const results = await crawlCoursesWithResults(coursesToCrawl);
+            const handledCourseIds = new Set();
+            const nextRunMap = {};
+
+            results.forEach((result, index) => {
+                const fallbackCourse = coursesToCrawl[index];
+                const course = result?.course || fallbackCourse;
+                const courseId = String(course?.courseId || '').trim();
+                if (!courseId) return;
+
+                handledCourseIds.add(courseId);
+                if (result?.ok === false) {
+                    failedCourseCount += 1;
+                    crawledItems.push(
+                        ...bindItemsToCourse(
+                            snapshotItemsByCourse.get(courseId),
+                            course,
+                        ),
+                    );
+                    return;
+                }
+
+                nextRunMap[courseId] = now;
+                crawledItems.push(...bindItemsToCourse(result?.items, course));
+            });
+
+            coursesToCrawl.forEach((course) => {
+                const courseId = String(course?.courseId || '').trim();
+                if (!courseId || handledCourseIds.has(courseId)) return;
+
+                failedCourseCount += 1;
+                crawledItems.push(
+                    ...bindItemsToCourse(snapshotItemsByCourse.get(courseId), course),
+                );
+            });
+
+            if (Object.keys(nextRunMap).length) {
+                await E.saveCourseRunMap?.(nextRunMap);
+            }
+        }
+
+        return {
+            items: E.dedupeItems([...reusedItems, ...crawledItems]),
+            reusedCourseCount,
+            crawledCourseCount: coursesToCrawl.length,
+            failedCourseCount,
+        };
+    }
+
     async function refreshAll({ force = false } = {}) {
         if (inFlight) return;
         inFlight = true;
@@ -173,6 +412,7 @@
         try {
             E.ensureRoot();
             const includeSmClass = await loadIncludeSmClassSetting();
+            await loadCrawlVisibilitySettings();
 
             let preflightCourses = [];
             if (isDashboardPage()) {
@@ -268,18 +508,40 @@
                     return;
                 }
 
-                const items = await crawlAllDashboardItems(crawlCourses);
+                const refreshed = await collectIncrementalCourseItems(
+                    crawlCourses,
+                    snap.items,
+                    {
+                        force,
+                        onPlan: (plan) => {
+                            E.setBadge(plan.crawlCourseCount > 0 ? 'CRAWL' : 'CACHE');
+                            E.setSub(describeIncrementalRefresh(plan));
+                        },
+                    },
+                );
+                const preservedExcludedItems = (
+                    Array.isArray(snap.items) ? snap.items : []
+                ).filter((item) =>
+                    excludedCourseIds.has(String(item?.courseId)),
+                );
+                const mergedSnapshotItems = E.dedupeItems([
+                    ...preservedExcludedItems,
+                    ...refreshed.items,
+                ]);
                 const visibleItems = filterItemsByExcludedCourses(
-                    items,
+                    mergedSnapshotItems,
                     excludedCourseIds,
                 );
                 window.__ECDASH_ITEMS__ = visibleItems;
-                E.saveSnapshot(visibleItems);
+                E.saveSnapshot(mergedSnapshotItems);
 
-                E.setBadge('OK');
-                E.setSub(
-                    `${E.summarizeCounts(visibleItems)} · 마지막 갱신 ${new Date().toLocaleTimeString()}`,
+                E.setBadge(
+                    refreshed.crawledCourseCount === 0 &&
+                        refreshed.reusedCourseCount > 0
+                        ? 'CACHE'
+                        : 'OK',
                 );
+                E.setSub(summarizeRefreshOutcome(visibleItems, refreshed));
                 E.render(visibleItems);
                 return;
             }
@@ -373,48 +635,50 @@
             await E.saveCourseCache?.(
                 rawCachedCourses.length ? rawCachedCourses : crawlCourses,
             );
-            E.setBadge('CRAWL');
-            E.setSub(`캐시된 과목 ${crawlCourses.length}개 기준으로 갱신 중…`);
-
-            const perCourse = await E.mapWithConcurrency(
+            const refreshed = await collectIncrementalCourseItems(
                 crawlCourses,
-                E.constants.CRAWL_CONCURRENCY,
-                async (course) => {
-                    try {
-                        return await E.crawlCourseItems(course);
-                    } catch (err) {
-                        console.warn(
-                            `[ECDASH] cached course crawl skipped. courseId=${course.courseId}`,
-                            err,
-                        );
-                        return [];
-                    }
+                snap.items,
+                {
+                    force,
+                    onPlan: (plan) => {
+                        E.setBadge(plan.crawlCourseCount > 0 ? 'CRAWL' : 'CACHE');
+                        E.setSub(describeIncrementalRefresh(plan));
+                    },
                 },
             );
-
-            const crawledItems = filterItemsByExcludedCourses(
-                E.dedupeItems(perCourse.flat()),
+            const refreshedItems = filterItemsByExcludedCourses(
+                refreshed.items,
                 excludedCourseIds,
             );
             const targetIds = new Set(
                 crawlCourses.map((course) => String(course.courseId)),
             );
+            const knownCourseIds = new Set(
+                (rawCachedCourses.length ? rawCachedCourses : crawlCourses).map(
+                    (course) => String(course.courseId),
+                ),
+            );
             // 새로 크롤링한 과목만 교체하고, 나머지 과목 항목은 기존 스냅샷을 유지.
             const keepItems = filterItemsByExcludedCourses(
                 (Array.isArray(snap.items) ? snap.items : []).filter(
-                    (item) => !targetIds.has(String(item.courseId)),
+                    (item) =>
+                        !targetIds.has(String(item.courseId)) &&
+                        knownCourseIds.has(String(item.courseId)),
                 ),
                 excludedCourseIds,
             );
-            const mergedItems = E.dedupeItems([...keepItems, ...crawledItems]);
+            const mergedItems = E.dedupeItems([...keepItems, ...refreshedItems]);
 
             window.__ECDASH_ITEMS__ = mergedItems;
             E.saveSnapshot(mergedItems);
 
-            E.setBadge('OK');
-            E.setSub(
-                `${E.summarizeCounts(mergedItems)} · 마지막 갱신 ${new Date().toLocaleTimeString()}`,
+            E.setBadge(
+                refreshed.crawledCourseCount === 0 &&
+                    refreshed.reusedCourseCount > 0
+                    ? 'CACHE'
+                    : 'OK',
             );
+            E.setSub(summarizeRefreshOutcome(mergedItems, refreshed));
             E.render(mergedItems);
         } catch (e) {
             console.error(e);

@@ -49,7 +49,6 @@ export function PreviewApp() {
     const scenarioMapRef = useRef(createPreviewScenarios());
     const [scenarioId, setScenarioId] = useState<PreviewScenarioId>('mixed');
     const [previewPage, setPreviewPage] = useState<PreviewPageId>('dashboard');
-    const [canvasCards] = useState(() => createPreviewCanvasCards());
     const [globalStyleSnapshot] = useState<GlobalStyleSnapshot | null>(() => {
         try {
             const raw = window.localStorage.getItem(
@@ -155,20 +154,14 @@ export function PreviewApp() {
 
     return (
         <>
-            <PreviewLandingPage canvasCards={canvasCards}>
-                <div className="rounded-[36px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,20,38,0.9)_0%,rgba(6,11,21,0.98)_100%)] p-3 shadow-[0_30px_90px_rgba(2,8,23,0.4)] md:p-4">
-                    <div
-                        className="mx-auto w-full overflow-visible"
-                        style={{
-                            height: browserShellHeight
-                                ? browserShellHeight * PREVIEW_BROWSER_SCALE
-                                : undefined,
-                        }}
-                    >
+            <PreviewLandingPage>
+                <div className="flex rounded-[36px]">
+                    <div className="flex mx-auto h-[98vh] w-full items-start justify-center overflow-visible">
                         <div
                             ref={browserShellRef}
-                            className="mx-auto relative flex max-h-[98vh] max-w-[2048px] flex-col overflow-hidden rounded-[28px] border border-[#bcc4d0] bg-[#eef0f3] shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+                            className="relative flex w-full shrink-0 max-h-[98vh] flex-col overflow-hidden rounded-[28px] border border-[#bcc4d0] bg-[#eef0f3] shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
                             style={{
+                                width: `${100 / PREVIEW_BROWSER_SCALE}%`,
                                 transform: `scale(${PREVIEW_BROWSER_SCALE})`,
                                 transformOrigin: 'top center',
                             }}
@@ -192,9 +185,7 @@ export function PreviewApp() {
                                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                                     <div className="flex flex-wrap gap-2">
                                         <PreviewChipButton
-                                            active={
-                                                previewPage === 'dashboard'
-                                            }
+                                            active={previewPage === 'dashboard'}
                                             label="대시보드 페이지"
                                             onClick={() => {
                                                 setPreviewPage('dashboard');
@@ -239,9 +230,8 @@ export function PreviewApp() {
                                         </div>
                                     ) : (
                                         <div className="text-[12px] font-medium text-slate-500">
-                                            VOD 패널 토글, 배속 메뉴,
-                                            1000배속 버튼 상태를 바로 확인할 수
-                                            있습니다.
+                                            VOD 패널 토글, 배속 메뉴, 1000배속
+                                            버튼 상태를 바로 확인할 수 있습니다.
                                         </div>
                                     )}
                                 </div>

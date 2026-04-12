@@ -147,7 +147,7 @@ export function DashboardFilterBar({
                 <button
                     type="button"
                     className={[
-                        'inline-flex h-8 items-center rounded-full border px-3 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
+                        'inline-flex h-8 items-center rounded-full border px-2 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
                         !typeFilter.length
                             ? 'border-sky-300 bg-sky-50 text-sky-700 focus:bg-sky-50 focus:border-sky-300 focus:text-sky-700 active:bg-sky-50'
                             : 'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50 focus:bg-white focus:border-zinc-200 focus:text-zinc-600 active:bg-white',
@@ -162,7 +162,7 @@ export function DashboardFilterBar({
                 <button
                     type="button"
                     className={[
-                        'inline-flex h-8 items-center rounded-full border px-3 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
+                        'inline-flex h-8 items-center rounded-full border px-2 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
                         isNotDoneFilterActive
                             ? 'border-sky-300 bg-sky-50 text-sky-700 focus:bg-sky-50 focus:border-sky-300 focus:text-sky-700 active:bg-sky-50'
                             : 'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50 focus:bg-white focus:border-zinc-200 focus:text-zinc-600 active:bg-white',
@@ -181,7 +181,7 @@ export function DashboardFilterBar({
                         key={option.value}
                         type="button"
                         className={[
-                            'inline-flex h-8 items-center rounded-full border px-3 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
+                            'inline-flex h-8 items-center rounded-full border px-2 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
                             typeFilterSet.has(option.value)
                                 ? 'border-sky-300 bg-sky-50 text-sky-700 focus:bg-sky-50 focus:border-sky-300 focus:text-sky-700 active:bg-sky-50'
                                 : 'border-zinc-200 bg-white text-zinc-600 hover:bg-sky-50 focus:bg-white focus:border-zinc-200 focus:text-zinc-600 active:bg-white',

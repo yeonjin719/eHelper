@@ -34,7 +34,7 @@ export function createPreviewCanvasCards(now = Date.now()) {
 
     return [
         {
-            title: '24시간 내 확인',
+            title: '임박한 마감',
             value: `${urgentCount}건`,
             note: '오늘 마감 과제와 이미 지난 토론을 같이 확인할 수 있어요.',
         },

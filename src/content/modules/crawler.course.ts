@@ -281,6 +281,67 @@
         }
     };
 
+    E.loadCourseRunMap = async function loadCourseRunMap() {
+        try {
+            const res = await chrome.storage?.local?.get?.([
+                E.constants.STORAGE_COURSE_RUN_MAP,
+            ]);
+            const raw = res?.[E.constants.STORAGE_COURSE_RUN_MAP];
+            if (!raw || typeof raw !== 'object') return {};
+
+            return Object.fromEntries(
+                Object.entries(raw)
+                    .map(([courseId, lastRunAt]) => [
+                        String(courseId || '').trim(),
+                        Number(lastRunAt || 0),
+                    ])
+                    .filter(
+                        ([courseId, lastRunAt]) =>
+                            courseId && Number.isFinite(lastRunAt) && lastRunAt > 0,
+                    ),
+            );
+        } catch (_) {
+            return {};
+        }
+    };
+
+    E.saveCourseRunMap = async function saveCourseRunMap(updates, options = {}) {
+        try {
+            const key = E.constants.STORAGE_COURSE_RUN_MAP;
+            const current = options.replace
+                ? {}
+                : await E.loadCourseRunMap();
+            const next = { ...current };
+
+            Object.entries(updates || {}).forEach(([courseId, lastRunAt]) => {
+                const normalizedCourseId = String(courseId || '').trim();
+                const normalizedLastRunAt = Number(lastRunAt || 0);
+                if (
+                    normalizedCourseId &&
+                    Number.isFinite(normalizedLastRunAt) &&
+                    normalizedLastRunAt > 0
+                ) {
+                    next[normalizedCourseId] = normalizedLastRunAt;
+                }
+            });
+
+            const removeCourseIds = Array.isArray(options.removeCourseIds)
+                ? options.removeCourseIds
+                : [];
+            removeCourseIds.forEach((courseId) => {
+                delete next[String(courseId || '').trim()];
+            });
+
+            await chrome.storage?.local?.set?.({
+                [key]: next,
+            });
+
+            return { updated: true };
+        } catch (_) {
+            return { updated: false };
+        }
+    };
+
     E.parseDashboardCoursesHtmlSMU = function parseDashboardCoursesHtmlSMU(
         htmlText,
     ) {
