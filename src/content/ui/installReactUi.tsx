@@ -1,7 +1,11 @@
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { DashboardApp } from './components/DashboardApp';
+import { attachDashboardDevApi } from './runtime/dashboardDevApi';
+import { ensureDashboardDevBridge } from './runtime/dashboardDevBridge';
+import { attachDashboardDevTools } from './runtime/dashboardDevTools';
 import { attachDashboardRuntimeApi } from './runtime/dashboardRuntimeApi';
+import { ensureDashboardShadowMount } from './runtime/dashboardShadowMount';
 import {
     applyInitialStateFromStorage,
     createUiStore,
@@ -14,6 +18,8 @@ import {
     if (runtime.isBlockedPage?.()) return;
 
     initializeRuntimeState(runtime);
+    attachDashboardDevApi(runtime);
+    ensureDashboardDevBridge(runtime);
     const store = createUiStore(runtime);
 
     let mountedRoot: Root | null = null;
@@ -24,12 +30,8 @@ import {
         if (rootEl && mountedRoot) return rootEl;
 
         if (!rootEl) {
-            rootEl = document.getElementById(runtime.constants.ROOT_ID);
-            if (!rootEl) {
-                rootEl = document.createElement('div');
-                rootEl.id = runtime.constants.ROOT_ID;
-                document.body.appendChild(rootEl);
-            }
+            const shadowMount = ensureDashboardShadowMount(runtime);
+            rootEl = shadowMount.mountEl;
         }
         if (!mountedRoot) {
             mountedRoot = createRoot(rootEl);
@@ -43,6 +45,12 @@ import {
     }
 
     attachDashboardRuntimeApi({
+        runtime,
+        store,
+        mountReactRoot,
+    });
+
+    attachDashboardDevTools({
         runtime,
         store,
         mountReactRoot,

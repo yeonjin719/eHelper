@@ -8,6 +8,7 @@ export type ItemType =
 export type ItemStatus = 'TODO' | 'DONE' | 'UNKNOWN';
 export type FilterValue = 'DUE_SOON' | 'OVERDUE' | 'TODO_ONLY' | 'NOT_DONE';
 export type TypeFilterValue = ItemType;
+export type DashboardDevDataSource = 'real' | 'mock';
 
 export interface DashboardItem {
     id: string;
@@ -35,6 +36,8 @@ export interface UiState {
     hidePastForums: boolean;
     hideDoneLectures: boolean;
     hideDoneAssignments: boolean;
+    hideResources: boolean;
+    hideNotices: boolean;
     includeSmClass: boolean;
     collapsed: boolean;
     loading: boolean;
@@ -42,6 +45,9 @@ export interface UiState {
     badge: string;
     sub: string;
     settingsOpen: boolean;
+    devPanelOpen: boolean;
+    devDataSource: DashboardDevDataSource;
+    devScenarioId: string;
 }
 
 export type DashboardRuntime = Record<string, any>;

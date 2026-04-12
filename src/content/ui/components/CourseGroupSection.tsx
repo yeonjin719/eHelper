@@ -1,7 +1,7 @@
-import React from 'react';
 import type { DashboardItem, DashboardRuntime } from '../types';
-import { isOverdueItem } from '../utils/dashboardUi';
+import { isOverdueItem } from '../utils/itemStatus';
 import { DashboardItemCard } from './DashboardItemCard';
+import { IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
 
 interface CourseGroupSectionProps {
     courseName: string;
@@ -29,8 +29,8 @@ export function CourseGroupSection({
             item.dueAt >= now &&
             item.dueAt <= dueSoonThreshold,
     ).length;
-    const overdueCount = items.filter(
-        (item) => isOverdueItem(item, now),
+    const overdueCount = items.filter((item) =>
+        isOverdueItem(item, now),
     ).length;
     const isNewCourse = items.some(
         (item) =>
@@ -72,7 +72,7 @@ export function CourseGroupSection({
                         </span>
                     )}
                     <span className="w-4 text-center text-[12px] text-zinc-600">
-                        {isOpen ? '▾' : '▸'}
+                        {isOpen ? <IoMdArrowDropup /> : <IoMdArrowDropdown />}
                     </span>
                 </div>
             </button>

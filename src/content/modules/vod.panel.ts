@@ -1,5 +1,8 @@
 // @ts-nocheck
-import { buildVodPanelMarkup } from './vod.panel.template';
+import {
+    buildVodPanelMarkup,
+    getVodPanelToggleIconMarkup,
+} from './vod.panel.template';
 
 (() => {
     const E = window.__ECDASH__;
@@ -15,18 +18,208 @@ import { buildVodPanelMarkup } from './vod.panel.template';
     const VOD_PANEL_BODY_ID = 'ecdash-vod-panel-body';
     const VOD_PANEL_TOGGLE_ID = 'ecdash-vod-panel-toggle';
     const VOD_TURBO_RATE = 1000;
+    const VOD_PANEL_POSITION_KEY =
+        E.constants?.VOD_PANEL_POSITION_KEY || 'ecdash:smu:vod:panelPosition';
+    const VOD_PANEL_VIEWPORT_MARGIN = 8;
 
     function formatVodSpeedLabel(rate) {
         const current = E.closestVodSpeedOption(rate);
         return Number.isInteger(current) ? `${current}x` : `${current.toFixed(2)}x`;
     }
 
+    function getVodPanelDefaultPosition() {
+        const offset = window.innerWidth <= 1200 ? 10 : 14;
+        return { left: offset, top: offset };
+    }
+
+    function getVodPanelCurrentPosition(panel) {
+        if (!panel) return getVodPanelDefaultPosition();
+
+        const rect = panel.getBoundingClientRect();
+        const inlineLeft = Number.parseFloat(panel.style.left);
+        const inlineTop = Number.parseFloat(panel.style.top);
+
+        return {
+            left: Number.isFinite(inlineLeft) ? inlineLeft : rect.left,
+            top: Number.isFinite(inlineTop) ? inlineTop : rect.top,
+        };
+    }
+
+    function clampVodPanelPosition(panel, position) {
+        const fallback = getVodPanelDefaultPosition();
+        const rect = panel?.getBoundingClientRect?.() || { width: 0, height: 0 };
+        const width = Math.max(Number(rect.width) || 0, panel?.offsetWidth || 0, 124);
+        const height = Math.max(
+            Number(rect.height) || 0,
+            panel?.offsetHeight || 0,
+            40,
+        );
+        const minLeft = VOD_PANEL_VIEWPORT_MARGIN;
+        const minTop = VOD_PANEL_VIEWPORT_MARGIN;
+        const maxLeft = Math.max(
+            minLeft,
+            window.innerWidth - width - VOD_PANEL_VIEWPORT_MARGIN,
+        );
+        const maxTop = Math.max(
+            minTop,
+            window.innerHeight - height - VOD_PANEL_VIEWPORT_MARGIN,
+        );
+        const rawLeft = Number(position?.left);
+        const rawTop = Number(position?.top);
+
+        return {
+            left: Math.min(
+                maxLeft,
+                Math.max(
+                    minLeft,
+                    Number.isFinite(rawLeft) ? rawLeft : fallback.left,
+                ),
+            ),
+            top: Math.min(
+                maxTop,
+                Math.max(minTop, Number.isFinite(rawTop) ? rawTop : fallback.top),
+            ),
+        };
+    }
+
+    function applyVodPanelPosition(panel, position) {
+        if (!panel) return getVodPanelDefaultPosition();
+
+        const next = clampVodPanelPosition(panel, position);
+        panel.style.left = `${Math.round(next.left)}px`;
+        panel.style.top = `${Math.round(next.top)}px`;
+        return next;
+    }
+
+    async function persistVodPanelPosition(position) {
+        try {
+            await E.setSync({
+                [VOD_PANEL_POSITION_KEY]: {
+                    left: Math.round(position.left),
+                    top: Math.round(position.top),
+                },
+            });
+        } catch (_) {
+            // 무시
+        }
+    }
+
+    async function restoreVodPanelPosition(panel) {
+        let storedPosition;
+        try {
+            const stored = await E.getSync([VOD_PANEL_POSITION_KEY]);
+            storedPosition = stored?.[VOD_PANEL_POSITION_KEY];
+        } catch (_) {
+            // 무시
+        }
+
+        return applyVodPanelPosition(
+            panel,
+            storedPosition || getVodPanelDefaultPosition(),
+        );
+    }
+
+    function bindVodPanelDrag(panel, closeMenu) {
+        if (!panel || panel.dataset.ecdashDragBound === '1') return;
+
+        const handle = panel.querySelector('.ecdash-vod-panel-head');
+        if (!handle) return;
+
+        panel.dataset.ecdashDragBound = '1';
+
+        let dragState = null;
+
+        const finishDrag = (event) => {
+            if (!dragState) return;
+            if (
+                typeof event?.pointerId === 'number' &&
+                event.pointerId !== dragState.pointerId
+            ) {
+                return;
+            }
+
+            const lastState = dragState;
+            dragState = null;
+            panel.classList.remove('is-dragging');
+            document.body.style.userSelect = lastState.userSelect;
+
+            try {
+                handle.releasePointerCapture?.(lastState.pointerId);
+            } catch (_) {
+                // 무시
+            }
+
+            if (lastState.moved) {
+                const position = applyVodPanelPosition(
+                    panel,
+                    getVodPanelCurrentPosition(panel),
+                );
+                void persistVodPanelPosition(position);
+            }
+        };
+
+        const handlePointerMove = (event) => {
+            if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+            dragState.moved = true;
+            applyVodPanelPosition(panel, {
+                left: dragState.startLeft + (event.clientX - dragState.startX),
+                top: dragState.startTop + (event.clientY - dragState.startY),
+            });
+        };
+
+        handle.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) return;
+
+            const target = event.target instanceof Element ? event.target : null;
+            if (target?.closest('button, a, input, select, textarea')) return;
+
+            const start = getVodPanelCurrentPosition(panel);
+            closeMenu();
+            dragState = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                startLeft: start.left,
+                startTop: start.top,
+                moved: false,
+                userSelect: document.body.style.userSelect,
+            };
+
+            panel.classList.add('is-dragging');
+            document.body.style.userSelect = 'none';
+
+            try {
+                handle.setPointerCapture?.(event.pointerId);
+            } catch (_) {
+                // 무시
+            }
+
+            event.preventDefault();
+        });
+
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', finishDrag);
+        document.addEventListener('pointercancel', finishDrag);
+        window.addEventListener('resize', () => {
+            applyVodPanelPosition(panel, getVodPanelCurrentPosition(panel));
+        });
+    }
+
+    function getVodTurboButtonLabel(isActive) {
+        return isActive ? '1배속' : '1000배속 스킵';
+    }
+
     function updateVodTurboButtonState(panel, rate) {
         const turboButton = panel?.querySelector('#ecdash-vod-speed-max');
         if (!turboButton) return;
         const isActive = E.closestVodSpeedOption(rate) === VOD_TURBO_RATE;
+        const buttonLabel = getVodTurboButtonLabel(isActive);
         turboButton.classList.toggle('is-active', isActive);
         turboButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        turboButton.setAttribute('aria-label', buttonLabel);
+        turboButton.setAttribute('title', buttonLabel);
+        turboButton.textContent = buttonLabel;
     }
 
     E.updateVodSpeedPanelRate = function updateVodSpeedPanelRate(rate) {
@@ -82,7 +275,7 @@ import { buildVodPanelMarkup } from './vod.panel.template';
         const collapsed = Boolean(isCollapsed);
         panel.classList.toggle('is-collapsed', collapsed);
         body.hidden = collapsed;
-        toggle.textContent = collapsed ? '▶' : '◁';
+        toggle.innerHTML = getVodPanelToggleIconMarkup(collapsed);
         toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
         toggle.setAttribute('aria-label', collapsed ? '패널 펼치기' : '패널 접기');
         toggle.title = collapsed ? '펼치기' : '접기';
@@ -125,7 +318,18 @@ import { buildVodPanelMarkup } from './vod.panel.template';
     ) {
         const panel = E.ensureVodSpeedPanel();
         let targetRate = E.closestVodSpeedOption(initialRate);
-        const closeMenu = () => E.setVodSpeedMenuOpen(panel, false);
+        const syncPanelPosition = () => {
+            window.requestAnimationFrame(() => {
+                applyVodPanelPosition(panel, getVodPanelCurrentPosition(panel));
+            });
+        };
+        const closeMenu = () => {
+            E.setVodSpeedMenuOpen(panel, false);
+            syncPanelPosition();
+        };
+
+        await restoreVodPanelPosition(panel);
+        bindVodPanelDrag(panel, closeMenu);
 
         const persistRate = async (rate) => {
             try {
@@ -154,6 +358,7 @@ import { buildVodPanelMarkup } from './vod.panel.template';
                     closeMenu();
                 }
                 E.setVodSpeedPanelCollapsed(panel, nextCollapsed);
+                syncPanelPosition();
             });
 
         panel
@@ -177,7 +382,11 @@ import { buildVodPanelMarkup } from './vod.panel.template';
             .querySelector('#ecdash-vod-speed-max')
             ?.addEventListener('click', () => {
                 closeMenu();
-                void applyAndPersist(VOD_TURBO_RATE, true);
+                const nextRate =
+                    E.closestVodSpeedOption(targetRate) === VOD_TURBO_RATE
+                        ? 1
+                        : VOD_TURBO_RATE;
+                void applyAndPersist(nextRate, true);
             });
 
         panel
@@ -188,6 +397,7 @@ import { buildVodPanelMarkup } from './vod.panel.template';
                 if (!isOpen) {
                     E.updateVodSpeedMenuSelection(targetRate);
                 }
+                syncPanelPosition();
             });
 
         panel

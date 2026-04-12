@@ -429,7 +429,17 @@
     }
 
     async function boot() {
-        E.refreshAll = refreshAll;
+        E.__realRefreshAll = refreshAll;
+        E.refreshAll = async function refreshAllPublic(options = {}) {
+            if (
+                E.__devDataSource === 'mock' &&
+                typeof E.__refreshDevMockScenario === 'function'
+            ) {
+                return E.__refreshDevMockScenario();
+            }
+
+            return refreshAll(options);
+        };
 
         E.initVodEnhancements();
 

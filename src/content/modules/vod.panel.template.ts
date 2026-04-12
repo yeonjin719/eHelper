@@ -1,10 +1,36 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
+
+const vodPanelExpandedToggleIconMarkup = renderToStaticMarkup(
+    createElement(IoMdArrowDropup, {
+        'aria-hidden': true,
+        focusable: 'false',
+        className: 'ecdash-vod-panel-toggle-icon',
+    }),
+);
+
+const vodPanelCollapsedToggleIconMarkup = renderToStaticMarkup(
+    createElement(IoMdArrowDropdown, {
+        'aria-hidden': true,
+        focusable: 'false',
+        className: 'ecdash-vod-panel-toggle-icon',
+    }),
+);
+
+export function getVodPanelToggleIconMarkup(isCollapsed: boolean) {
+    return isCollapsed
+        ? vodPanelCollapsedToggleIconMarkup
+        : vodPanelExpandedToggleIconMarkup;
+}
+
 export function buildVodPanelMarkup(
     menuId: string,
     panelBodyId: string,
     panelToggleId: string,
 ) {
     return `
-        <div class="ecdash-vod-panel-head">
+        <div class="ecdash-vod-panel-head" title="드래그하여 위치 이동">
             <span class="ecdash-vod-speed-title">재생 컨트롤</span>
             <button
                 type="button"
@@ -14,7 +40,7 @@ export function buildVodPanelMarkup(
                 aria-controls="${panelBodyId}"
                 aria-expanded="true"
                 title="접기"
-            >◁</button>
+            >${getVodPanelToggleIconMarkup(false)}</button>
         </div>
         <div id="${panelBodyId}" class="ecdash-vod-panel-body">
             <div class="ecdash-vod-speed-actions">
@@ -43,7 +69,6 @@ export function buildVodPanelMarkup(
                 title="1000배속 스킵 모드"
             >1000배속 스킵</button>
             <div id="${menuId}" class="ecdash-vod-speed-menu" role="listbox" hidden></div>
-            <div class="ecdash-vod-speed-hint">Alt+, 느리게 · Alt+. 빠르게 · Alt+/ 기본속도</div>
         </div>
     `;
 }

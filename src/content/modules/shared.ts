@@ -17,6 +17,7 @@
         VOD_AUTO_CLOSE_KEY: `${storagePrefix}:vod:autoClose`,
         VOD_LANG_KEY: `${storagePrefix}:vod:lang`,
         VOD_PLAYBACK_RATE_KEY: `${storagePrefix}:vod:playbackRate`,
+        VOD_PANEL_POSITION_KEY: `${storagePrefix}:vod:panelPosition`,
         VOD_SPEED_OPTIONS: [
             0.75,
             1,

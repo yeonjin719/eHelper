@@ -4,15 +4,18 @@ import {
     UI_HIDDEN_ITEM_IDS_KEY,
     UI_HIDE_DONE_ASSIGNMENTS_KEY,
     UI_HIDE_DONE_LECTURES_KEY,
+    UI_HIDE_NOTICES_KEY,
     UI_HIDE_PAST_ASSIGNMENTS_KEY,
     UI_HIDE_PAST_FORUMS_KEY,
     UI_HIDE_PAST_LECTURES_KEY,
+    UI_HIDE_RESOURCES_KEY,
     UI_INCLUDE_SM_CLASS_KEY,
 } from '../constants';
 import { UiStore } from '../store/UiStore';
 import type { DashboardItem, DashboardRuntime } from '../types';
-import { cleanText, normalizeCourseName } from '../utils/dashboardUi';
+import { normalizeCourseName } from '../utils/courseNames';
 import { normalizeHiddenItemIds } from '../utils/hiddenItems';
+import { cleanText } from '../utils/text';
 
 // window.__ECDASH__의 UI 관련 필드를 안전한 기본값으로 맞춘다.
 export function initializeRuntimeState(runtime: DashboardRuntime) {
@@ -28,6 +31,8 @@ export function initializeRuntimeState(runtime: DashboardRuntime) {
     runtime.__hidePastForums = Boolean(runtime.__hidePastForums);
     runtime.__hideDoneLectures = Boolean(runtime.__hideDoneLectures);
     runtime.__hideDoneAssignments = Boolean(runtime.__hideDoneAssignments);
+    runtime.__hideResources = Boolean(runtime.__hideResources);
+    runtime.__hideNotices = Boolean(runtime.__hideNotices);
     runtime.__includeSmClass = Boolean(runtime.__includeSmClass);
     runtime.__hiddenItemIds = normalizeHiddenItemIds(runtime.__hiddenItemIds);
     runtime.__lastBadge = cleanText(runtime.__lastBadge || '');
@@ -49,6 +54,8 @@ export function createUiStore(runtime: DashboardRuntime) {
         hidePastForums: Boolean(runtime.__hidePastForums),
         hideDoneLectures: Boolean(runtime.__hideDoneLectures),
         hideDoneAssignments: Boolean(runtime.__hideDoneAssignments),
+        hideResources: Boolean(runtime.__hideResources),
+        hideNotices: Boolean(runtime.__hideNotices),
         includeSmClass: Boolean(runtime.__includeSmClass),
         collapsed: false,
         loading: Boolean(runtime.__isLoading),
@@ -56,6 +63,9 @@ export function createUiStore(runtime: DashboardRuntime) {
         badge: runtime.__lastBadge || '',
         sub: runtime.__lastSub || '대시보드에서 과목을 찾고 활동을 크롤링해요.',
         settingsOpen: false,
+        devPanelOpen: false,
+        devDataSource: 'real',
+        devScenarioId: 'mixed',
     });
 }
 
@@ -72,6 +82,8 @@ export async function applyInitialStateFromStorage(
             UI_HIDE_PAST_FORUMS_KEY,
             UI_HIDE_DONE_LECTURES_KEY,
             UI_HIDE_DONE_ASSIGNMENTS_KEY,
+            UI_HIDE_RESOURCES_KEY,
+            UI_HIDE_NOTICES_KEY,
             UI_INCLUDE_SM_CLASS_KEY,
             UI_HIDDEN_ITEM_IDS_KEY,
         ]);
@@ -86,6 +98,8 @@ export async function applyInitialStateFromStorage(
         const nextHideDoneAssignments = Boolean(
             res?.[UI_HIDE_DONE_ASSIGNMENTS_KEY],
         );
+        const nextHideResources = Boolean(res?.[UI_HIDE_RESOURCES_KEY]);
+        const nextHideNotices = Boolean(res?.[UI_HIDE_NOTICES_KEY]);
         const nextIncludeSmClass = Boolean(res?.[UI_INCLUDE_SM_CLASS_KEY]);
         const nextHiddenItemIds = normalizeHiddenItemIds(
             res?.[UI_HIDDEN_ITEM_IDS_KEY],
@@ -96,6 +110,8 @@ export async function applyInitialStateFromStorage(
         runtime.__hidePastForums = nextHidePastForums;
         runtime.__hideDoneLectures = nextHideDoneLectures;
         runtime.__hideDoneAssignments = nextHideDoneAssignments;
+        runtime.__hideResources = nextHideResources;
+        runtime.__hideNotices = nextHideNotices;
         runtime.__includeSmClass = nextIncludeSmClass;
         runtime.__hiddenItemIds = nextHiddenItemIds;
 
@@ -106,6 +122,8 @@ export async function applyInitialStateFromStorage(
             hidePastForums: nextHidePastForums,
             hideDoneLectures: nextHideDoneLectures,
             hideDoneAssignments: nextHideDoneAssignments,
+            hideResources: nextHideResources,
+            hideNotices: nextHideNotices,
             includeSmClass: nextIncludeSmClass,
             hiddenItemIds: nextHiddenItemIds,
         });
@@ -134,6 +152,8 @@ export function syncStoreFromRuntime(
         hidePastForums: Boolean(runtime.__hidePastForums),
         hideDoneLectures: Boolean(runtime.__hideDoneLectures),
         hideDoneAssignments: Boolean(runtime.__hideDoneAssignments),
+        hideResources: Boolean(runtime.__hideResources),
+        hideNotices: Boolean(runtime.__hideNotices),
         includeSmClass: Boolean(runtime.__includeSmClass),
         hiddenItemIds: normalizeHiddenItemIds(runtime.__hiddenItemIds),
     });

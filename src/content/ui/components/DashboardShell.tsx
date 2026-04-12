@@ -1,3 +1,4 @@
+import { useDashboardFloatingPosition } from '../hooks/useDashboardFloatingPosition';
 import { DashboardFilterBar } from './dashboardShell/DashboardFilterBar';
 import { DashboardFooter } from './dashboardShell/DashboardFooter';
 import { DashboardHeader } from './dashboardShell/DashboardHeader';
@@ -23,6 +24,8 @@ export function DashboardShell({
     hidePastForums,
     hideDoneLectures,
     hideDoneAssignments,
+    hideResources,
+    hideNotices,
     includeSmClass,
     hiddenItemCount,
     hiddenItems,
@@ -38,15 +41,26 @@ export function DashboardShell({
     onHidePastForumsChange,
     onHideDoneLecturesChange,
     onHideDoneAssignmentsChange,
+    onHideResourcesChange,
+    onHideNoticesChange,
     onIncludeSmClassChange,
     onUnhideItem,
     onResetHiddenItems,
     children,
 }: DashboardShellProps) {
     const settingsVisible = settingsOpen && !collapsed && isDashboardPage;
+    const { panelRef, position, dragging, handlePointerDown } =
+        useDashboardFloatingPosition(collapsed);
 
     return (
-        <div className="fixed right-2 top-4 z-[999999] [font-family:'Pretendard',sans-serif] md:right-4">
+        <div
+            ref={panelRef}
+            className="pointer-events-auto absolute z-[999999] [font-family:'Pretendard',sans-serif]"
+            style={{
+                top: position.top,
+                left: position.left,
+            }}
+        >
             <section
                 className={[
                     'overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.08)]',
@@ -57,9 +71,11 @@ export function DashboardShell({
             >
                 <DashboardHeader
                     collapsed={collapsed}
+                    dragging={dragging}
                     isLoading={loading}
                     loadingMessage={loadingMessage}
                     showSettingsButton={isDashboardPage}
+                    onDragHandlePointerDown={handlePointerDown}
                     onToggleCollapsed={onToggleCollapsed}
                     onRefresh={onRefresh}
                     onOpenSettings={onOpenSettings}
@@ -74,6 +90,8 @@ export function DashboardShell({
                             newCourseNames={newCourseNames}
                             courseFilter={courseFilter}
                             courseFilterAllValue={courseFilterAllValue}
+                            hideResources={hideResources}
+                            hideNotices={hideNotices}
                             onFilterChange={onFilterChange}
                             onTypeFilterChange={onTypeFilterChange}
                             onSelectCourse={onSelectCourse}
@@ -99,6 +117,8 @@ export function DashboardShell({
                     hidePastForums={hidePastForums}
                     hideDoneLectures={hideDoneLectures}
                     hideDoneAssignments={hideDoneAssignments}
+                    hideResources={hideResources}
+                    hideNotices={hideNotices}
                     includeSmClass={includeSmClass}
                     hiddenItemCount={hiddenItemCount}
                     hiddenItems={hiddenItems}
@@ -108,6 +128,8 @@ export function DashboardShell({
                     onHidePastForumsChange={onHidePastForumsChange}
                     onHideDoneLecturesChange={onHideDoneLecturesChange}
                     onHideDoneAssignmentsChange={onHideDoneAssignmentsChange}
+                    onHideResourcesChange={onHideResourcesChange}
+                    onHideNoticesChange={onHideNoticesChange}
                     onIncludeSmClassChange={onIncludeSmClassChange}
                     onUnhideItem={onUnhideItem}
                     onResetHiddenItems={onResetHiddenItems}

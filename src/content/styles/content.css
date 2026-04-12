@@ -1,4 +1,5 @@
 @tailwind components;
+
 @tailwind utilities;
 
 #ecdash-vod-speed-panel {
@@ -22,6 +23,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+#ecdash-vod-speed-panel.is-dragging .ecdash-vod-panel-head {
+  cursor: grabbing;
 }
 
 .ecdash-vod-panel-toggle {
@@ -38,6 +46,18 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+}
+
+.ecdash-vod-panel-head .ecdash-vod-panel-toggle {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ecdash-vod-panel-toggle svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  pointer-events: none;
 }
 
 .ecdash-vod-panel-toggle:hover {
@@ -195,7 +215,7 @@
   line-height: 1.3;
 }
 
-@media (max-width: 1200px) {
+@media (max-width:1200px) {
   #ecdash-vod-speed-panel {
     top: 10px;
     left: 10px;
@@ -213,27 +233,27 @@
 }
 
 :where(
-  #ecdash-root :is(
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6,
-      p,
-      ul,
-      ol,
-      li,
-      figure,
-      blockquote,
-      dl,
-      dd,
-      label,
-      button,
-      input,
-      select,
-      textarea
-    )
+#ecdash-root :is(
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ul,
+ol,
+li,
+figure,
+blockquote,
+dl,
+dd,
+label,
+button,
+input,
+select,
+textarea
+)
 ) {
   margin: 0;
 }
@@ -274,13 +294,12 @@
 
 #ecdash-settings-backdrop,
 #ecdash-settings-backdrop:hover,
-#ecdash-settings-backdrop:active {
+  #ecdash-settings-backdrop:active {
   background: rgba(9, 9, 11, 0.55);
 }
 
 #ecdash-root
-  .ecdash-settings-option
-  > input[type='checkbox'].ecdash-settings-checkbox {
+.ecdash-settings-option > input[type='checkbox'].ecdash-settings-checkbox {
   margin: 0 !important;
   margin-top: 0 !important;
   vertical-align: middle;
@@ -319,7 +338,7 @@
 }
 
 #ecdash-filter:focus,
-#ecdash-type-filter:focus {
+  #ecdash-type-filter:focus {
   background: #ffffff !important;
   color: #0f172a !important;
 }
@@ -331,7 +350,7 @@
 }
 
 #ecdash-filter option:checked,
-#ecdash-type-filter option:checked {
+  #ecdash-type-filter option:checked {
   background: #111111 !important;
   color: #ffffff !important;
 }
@@ -341,6 +360,7 @@
     opacity: 0;
     transform: translate3d(10px, -6px, 0) scale(0.985);
   }
+  
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);

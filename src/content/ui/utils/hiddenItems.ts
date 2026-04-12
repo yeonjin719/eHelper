@@ -1,6 +1,7 @@
 import type { HiddenItemPreview } from '../components/dashboardShell/types';
 import type { DashboardItem, DashboardRuntime } from '../types';
-import { cleanText, normalizeCourseName } from './dashboardUi';
+import { normalizeCourseName } from './courseNames';
+import { cleanText } from './text';
 
 // 숨김 항목 ID 배열을 정규화(공백 제거/중복 제거/최대 길이 제한)한다.
 export function normalizeHiddenItemIds(value: unknown) {

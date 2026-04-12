@@ -1,7 +1,7 @@
 import { UI_COLLAPSED_KEY } from '../constants';
 import { UiStore } from '../store/UiStore';
 import type { DashboardItem, DashboardRuntime } from '../types';
-import { cleanText } from '../utils/dashboardUi';
+import { cleanText } from '../utils/text';
 import { syncStoreFromRuntime } from './dashboardRuntimeSetup';
 
 interface AttachRuntimeApiParams {

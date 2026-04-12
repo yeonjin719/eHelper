@@ -1,15 +1,23 @@
-import React, { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import React, {
+    useEffect,
+    useMemo,
+    useRef,
+    useSyncExternalStore,
+} from 'react';
 import {
     COURSE_FILTER_ALL,
     UI_COLLAPSED_KEY,
-    UI_HIDDEN_ITEM_IDS_KEY,
     UI_HIDE_DONE_ASSIGNMENTS_KEY,
     UI_HIDE_DONE_LECTURES_KEY,
+    UI_HIDE_NOTICES_KEY,
     UI_HIDE_PAST_ASSIGNMENTS_KEY,
     UI_HIDE_PAST_FORUMS_KEY,
     UI_HIDE_PAST_LECTURES_KEY,
+    UI_HIDE_RESOURCES_KEY,
     UI_INCLUDE_SM_CLASS_KEY,
 } from '../constants';
+import { useCourseOpenMap } from '../hooks/useCourseOpenMap';
+import { useDashboardSettingsLifecycle } from '../hooks/useDashboardSettingsLifecycle';
 import { UiStore } from '../store/UiStore';
 import type {
     DashboardRuntime,
@@ -17,18 +25,24 @@ import type {
     TypeFilterValue,
 } from '../types';
 import {
-    buildErrorReportMailto,
-    cleanText,
     collectCourseNames,
     collectNewCourseNames,
     normalizeCourseName,
-    selectFilteredItems,
-} from '../utils/dashboardUi';
+} from '../utils/courseNames';
+import {
+    persistUiPreference,
+    updateBooleanPreference,
+    updateStoredHiddenItemIds,
+} from '../utils/dashboardPersistence';
+import { buildErrorReportMailto } from '../utils/errorReporting';
 import {
     buildHiddenItemPreviews,
     normalizeHiddenItemIds,
 } from '../utils/hiddenItems';
+import { selectFilteredItems } from '../utils/itemFiltering';
+import { cleanText } from '../utils/text';
 import { DashboardContent } from './DashboardContent';
+import { DashboardDevPanel } from './DashboardDevPanel';
 import { DashboardShell } from './DashboardShell';
 
 interface DashboardAppProps {
@@ -43,10 +57,8 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
         store.getState,
         store.getState,
     );
-    const [locationHref, setLocationHref] = useState(() => location.href);
-    const [courseOpenMap, setCourseOpenMap] = useState<Record<string, boolean>>(
-        {},
-    );
+    const lastSettingsCloseAtRef = useRef(0);
+    const locationHref = useDashboardSettingsLifecycle(store);
     const isDashboardPage = useMemo(
         () => Boolean(runtime.isDashboardPage?.() ?? runtime.isDashboardSMU?.()),
         [runtime, locationHref],
@@ -71,21 +83,6 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
         [runtime, state.hiddenItemIds, state.items],
     );
 
-    // 숨김 ID 목록 갱신 + 스토리지 동기화 공통 함수.
-    const updateHiddenItemIds = async (nextHiddenItemIds: string[]) => {
-        const normalizedNextHiddenItemIds =
-            normalizeHiddenItemIds(nextHiddenItemIds);
-        runtime.__hiddenItemIds = normalizedNextHiddenItemIds;
-        store.setState({ hiddenItemIds: normalizedNextHiddenItemIds });
-        try {
-            await chrome.storage?.local?.set?.({
-                [UI_HIDDEN_ITEM_IDS_KEY]: normalizedNextHiddenItemIds,
-            });
-        } catch {
-            // ignore
-        }
-    };
-
     useEffect(() => {
         // 필터 대상 과목이 사라졌으면 전체 과목 필터로 자동 복귀한다.
         if (
@@ -98,286 +95,313 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
     }, [allCourses, normalizedCourseFilter, runtime, store]);
 
     useEffect(() => {
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                store.setState({ settingsOpen: false });
-            }
-        };
-
-        document.addEventListener('keydown', onKeyDown);
-        return () => {
-            document.removeEventListener('keydown', onKeyDown);
-        };
-    }, [store]);
-
-    useEffect(() => {
         if (!isDashboardPage && state.settingsOpen) {
             store.setState({ settingsOpen: false });
         }
     }, [isDashboardPage, state.settingsOpen, store]);
 
     useEffect(() => {
-        // 화면/주소 전환 시 설정 모달이 열린 채 남지 않도록 정리한다.
-        const closeSettings = () => {
-            if (store.getState().settingsOpen) {
-                store.setState({ settingsOpen: false });
-            }
-        };
+        const nextTypeFilter = state.typeFilter.filter((type) => {
+            if (state.hideResources && type === 'RESOURCE') return false;
+            if (state.hideNotices && type === 'NOTICE') return false;
+            return true;
+        });
 
-        const onLocationChange = () => {
-            setLocationHref(location.href);
-            closeSettings();
-        };
-
-        const onVisibilityChange = () => {
-            if (document.visibilityState === 'hidden') {
-                closeSettings();
-            }
-        };
-
-        const originalPushState = history.pushState;
-        const originalReplaceState = history.replaceState;
-
-        history.pushState = function pushStatePatched(
-            ...args: Parameters<History['pushState']>
-        ) {
-            const result = originalPushState.apply(this, args as any);
-            onLocationChange();
-            return result;
-        };
-        history.replaceState = function replaceStatePatched(
-            ...args: Parameters<History['replaceState']>
-        ) {
-            const result = originalReplaceState.apply(this, args as any);
-            onLocationChange();
-            return result;
-        };
-
-        window.addEventListener('popstate', onLocationChange);
-        window.addEventListener('hashchange', onLocationChange);
-        window.addEventListener('pagehide', onLocationChange);
-        window.addEventListener('blur', closeSettings);
-        document.addEventListener('visibilitychange', onVisibilityChange);
-
-        return () => {
-            history.pushState = originalPushState;
-            history.replaceState = originalReplaceState;
-            window.removeEventListener('popstate', onLocationChange);
-            window.removeEventListener('hashchange', onLocationChange);
-            window.removeEventListener('pagehide', onLocationChange);
-            window.removeEventListener('blur', closeSettings);
-            document.removeEventListener(
-                'visibilitychange',
-                onVisibilityChange,
-            );
-        };
-    }, [store]);
+        if (nextTypeFilter.length !== state.typeFilter.length) {
+            store.setState({ typeFilter: nextTypeFilter });
+        }
+    }, [state.hideNotices, state.hideResources, state.typeFilter, store]);
 
     const { filtered, groups } = useMemo(
         () => selectFilteredItems(state),
         [state],
     );
     const groupEntries = useMemo(() => Array.from(groups.entries()), [groups]);
+    const { courseOpenMap, setCourseOpenMap } = useCourseOpenMap(groupEntries);
 
     const contactLink = useMemo(
         () => buildErrorReportMailto(state.sub),
         [state.sub],
     );
-
-    useEffect(() => {
-        // 신규 과목 그룹이 추가되면 기본 펼침 상태를 true로 채운다.
-        const groupNames = groupEntries.map(([courseName]) => courseName);
-        setCourseOpenMap((prev) => {
-            let changed = false;
-            const next: Record<string, boolean> = {};
-
-            for (const courseName of groupNames) {
-                if (Object.prototype.hasOwnProperty.call(prev, courseName)) {
-                    next[courseName] = prev[courseName];
-                } else {
-                    next[courseName] = true;
-                    changed = true;
-                }
-            }
-
-            for (const prevKey of Object.keys(prev)) {
-                if (!groupNames.includes(prevKey)) {
-                    changed = true;
-                    break;
-                }
-            }
-
-            return changed ? next : prev;
-        });
-    }, [groupEntries]);
+    const isMockMode = state.devDataSource === 'mock';
 
     return (
-        <DashboardShell
-            collapsed={state.collapsed}
-            sub={state.sub}
-            loading={state.loading}
-            loadingMessage={state.loadingMessage}
-            isDashboardPage={isDashboardPage}
-            filter={state.filter}
-            typeFilter={state.typeFilter}
-            allCourses={allCourses}
-            newCourseNames={newCourseNames}
-            courseFilter={normalizedCourseFilter}
-            courseFilterAllValue={COURSE_FILTER_ALL}
-            settingsOpen={state.settingsOpen}
-            contactLink={contactLink}
-            hidePastLectures={state.hidePastLectures}
-            hidePastAssignments={state.hidePastAssignments}
-            hidePastForums={state.hidePastForums}
-            hideDoneLectures={state.hideDoneLectures}
-            hideDoneAssignments={state.hideDoneAssignments}
-            includeSmClass={state.includeSmClass}
-            hiddenItemCount={state.hiddenItemIds.length}
-            hiddenItems={hiddenItems}
-            onToggleCollapsed={async () => {
-                const nextCollapsed = !state.collapsed;
-                store.setState({ collapsed: nextCollapsed });
-                try {
-                    await chrome.storage?.local?.set?.({
-                        [UI_COLLAPSED_KEY]: nextCollapsed,
-                    });
-                } catch {
-                    // ignore
-                }
-            }}
-            onFilterChange={(values) => {
-                store.setState({ filter: values as FilterValue[] });
-            }}
-            onTypeFilterChange={(values) => {
-                store.setState({ typeFilter: values as TypeFilterValue[] });
-            }}
-            onRefresh={() => {
-                runtime.refreshAll?.({ force: true });
-            }}
-            onOpenSettings={() => {
-                store.setState({ settingsOpen: true });
-            }}
-            onSelectCourse={(courseName) => {
-                runtime.__courseFilter = courseName;
-                store.setState({ courseFilter: courseName });
-            }}
-            onCloseSettings={() => {
-                store.setState({ settingsOpen: false });
-            }}
-            onHidePastLecturesChange={async (checked) => {
-                runtime.__hidePastLectures = checked;
-                store.setState({ hidePastLectures: checked });
-                try {
-                    await chrome.storage?.local?.set?.({
-                        [UI_HIDE_PAST_LECTURES_KEY]: checked,
-                    });
-                } catch {
-                    // ignore
-                }
-            }}
-            onHidePastAssignmentsChange={async (checked) => {
-                runtime.__hidePastAssignments = checked;
-                store.setState({ hidePastAssignments: checked });
-                try {
-                    await chrome.storage?.local?.set?.({
-                        [UI_HIDE_PAST_ASSIGNMENTS_KEY]: checked,
-                    });
-                } catch {
-                    // ignore
-                }
-            }}
-            onHidePastForumsChange={async (checked) => {
-                runtime.__hidePastForums = checked;
-                store.setState({ hidePastForums: checked });
-                try {
-                    await chrome.storage?.local?.set?.({
-                        [UI_HIDE_PAST_FORUMS_KEY]: checked,
-                    });
-                } catch {
-                    // ignore
-                }
-            }}
-            onHideDoneLecturesChange={async (checked) => {
-                runtime.__hideDoneLectures = checked;
-                store.setState({ hideDoneLectures: checked });
-                try {
-                    await chrome.storage?.local?.set?.({
-                        [UI_HIDE_DONE_LECTURES_KEY]: checked,
-                    });
-                } catch {
-                    // ignore
-                }
-            }}
-            onHideDoneAssignmentsChange={async (checked) => {
-                runtime.__hideDoneAssignments = checked;
-                store.setState({ hideDoneAssignments: checked });
-                try {
-                    await chrome.storage?.local?.set?.({
-                        [UI_HIDE_DONE_ASSIGNMENTS_KEY]: checked,
-                    });
-                } catch {
-                    // ignore
-                }
-            }}
-            onIncludeSmClassChange={async (checked) => {
-                runtime.__includeSmClass = checked;
-                store.setState({ includeSmClass: checked });
-                try {
-                    await chrome.storage?.local?.set?.({
-                        [UI_INCLUDE_SM_CLASS_KEY]: checked,
-                    });
-                } catch {
-                    // ignore
-                }
-
-                if (typeof runtime.refreshAll === 'function') {
-                    runtime.refreshAll({ force: true });
-                } else {
-                    runtime.render(window.__ECDASH_ITEMS__ || []);
-                }
-            }}
-            onUnhideItem={async (itemId) => {
-                const normalizedItemId = cleanText(itemId);
-                if (!normalizedItemId) return;
-                if (!state.hiddenItemIds.includes(normalizedItemId)) return;
-
-                const nextHiddenItemIds = state.hiddenItemIds.filter(
-                    (hiddenItemId) => hiddenItemId !== normalizedItemId,
-                );
-                await updateHiddenItemIds(nextHiddenItemIds);
-            }}
-            onResetHiddenItems={async () => {
-                if (!state.hiddenItemIds.length) return;
-                await updateHiddenItemIds([]);
-            }}
-        >
-            <DashboardContent
-                runtime={runtime}
-                hasItems={state.items.length > 0}
+        <>
+            <DashboardShell
+                collapsed={state.collapsed}
+                sub={state.sub}
                 loading={state.loading}
                 loadingMessage={state.loadingMessage}
+                isDashboardPage={isDashboardPage}
+                filter={state.filter}
+                typeFilter={state.typeFilter}
+                hideResources={state.hideResources}
+                hideNotices={state.hideNotices}
+                allCourses={allCourses}
+                newCourseNames={newCourseNames}
+                courseFilter={normalizedCourseFilter}
+                courseFilterAllValue={COURSE_FILTER_ALL}
+                settingsOpen={state.settingsOpen}
+                contactLink={contactLink}
+                hidePastLectures={state.hidePastLectures}
+                hidePastAssignments={state.hidePastAssignments}
+                hidePastForums={state.hidePastForums}
+                hideDoneLectures={state.hideDoneLectures}
+                hideDoneAssignments={state.hideDoneAssignments}
+                includeSmClass={state.includeSmClass}
                 hiddenItemCount={state.hiddenItemIds.length}
-                filteredItems={filtered}
-                groupEntries={groupEntries}
-                courseOpenMap={courseOpenMap}
-                onToggleCourse={(courseName) => {
-                    setCourseOpenMap((prev) => ({
-                        ...prev,
-                        [courseName]: !(prev[courseName] ?? true),
-                    }));
+                hiddenItems={hiddenItems}
+                onToggleCollapsed={async () => {
+                    const nextCollapsed = !state.collapsed;
+                    store.setState({ collapsed: nextCollapsed });
+                    await persistUiPreference(UI_COLLAPSED_KEY, nextCollapsed);
                 }}
-                onHideItem={async (itemId) => {
+                onFilterChange={(values) => {
+                    store.setState({ filter: values as FilterValue[] });
+                }}
+                onTypeFilterChange={(values) => {
+                    store.setState({ typeFilter: values as TypeFilterValue[] });
+                }}
+                onRefresh={() => {
+                    runtime.refreshAll?.({ force: true });
+                }}
+                onOpenSettings={() => {
+                    if (Date.now() - lastSettingsCloseAtRef.current < 250) return;
+                    store.setState({ settingsOpen: true });
+                }}
+                onSelectCourse={(courseName) => {
+                    runtime.__courseFilter = courseName;
+                    store.setState({ courseFilter: courseName });
+                }}
+                onCloseSettings={() => {
+                    lastSettingsCloseAtRef.current = Date.now();
+                    store.setState({ settingsOpen: false });
+                }}
+                onHidePastLecturesChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__hidePastLectures = checked;
+                        store.setState({ hidePastLectures: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_HIDE_PAST_LECTURES_KEY,
+                        runtimeKey: '__hidePastLectures',
+                        stateKey: 'hidePastLectures',
+                    });
+                }}
+                onHidePastAssignmentsChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__hidePastAssignments = checked;
+                        store.setState({ hidePastAssignments: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_HIDE_PAST_ASSIGNMENTS_KEY,
+                        runtimeKey: '__hidePastAssignments',
+                        stateKey: 'hidePastAssignments',
+                    });
+                }}
+                onHidePastForumsChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__hidePastForums = checked;
+                        store.setState({ hidePastForums: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_HIDE_PAST_FORUMS_KEY,
+                        runtimeKey: '__hidePastForums',
+                        stateKey: 'hidePastForums',
+                    });
+                }}
+                onHideDoneLecturesChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__hideDoneLectures = checked;
+                        store.setState({ hideDoneLectures: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_HIDE_DONE_LECTURES_KEY,
+                        runtimeKey: '__hideDoneLectures',
+                        stateKey: 'hideDoneLectures',
+                    });
+                }}
+                onHideDoneAssignmentsChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__hideDoneAssignments = checked;
+                        store.setState({ hideDoneAssignments: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_HIDE_DONE_ASSIGNMENTS_KEY,
+                        runtimeKey: '__hideDoneAssignments',
+                        stateKey: 'hideDoneAssignments',
+                    });
+                }}
+                onHideResourcesChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__hideResources = checked;
+                        store.setState({ hideResources: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_HIDE_RESOURCES_KEY,
+                        runtimeKey: '__hideResources',
+                        stateKey: 'hideResources',
+                    });
+                }}
+                onHideNoticesChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__hideNotices = checked;
+                        store.setState({ hideNotices: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_HIDE_NOTICES_KEY,
+                        runtimeKey: '__hideNotices',
+                        stateKey: 'hideNotices',
+                    });
+                }}
+                onIncludeSmClassChange={async (checked) => {
+                    if (isMockMode) {
+                        runtime.__includeSmClass = checked;
+                        store.setState({ includeSmClass: checked });
+                        return;
+                    }
+
+                    await updateBooleanPreference(store, runtime, {
+                        checked,
+                        storageKey: UI_INCLUDE_SM_CLASS_KEY,
+                        runtimeKey: '__includeSmClass',
+                        stateKey: 'includeSmClass',
+                    });
+
+                    if (typeof runtime.refreshAll === 'function') {
+                        runtime.refreshAll({ force: true });
+                    } else {
+                        runtime.render(window.__ECDASH_ITEMS__ || []);
+                    }
+                }}
+                onUnhideItem={async (itemId) => {
                     const normalizedItemId = cleanText(itemId);
                     if (!normalizedItemId) return;
-                    if (state.hiddenItemIds.includes(normalizedItemId)) return;
+                    if (!state.hiddenItemIds.includes(normalizedItemId)) return;
 
-                    const nextHiddenItemIds = normalizeHiddenItemIds([
-                        ...state.hiddenItemIds,
-                        normalizedItemId,
-                    ]);
-                    await updateHiddenItemIds(nextHiddenItemIds);
+                    const nextHiddenItemIds = state.hiddenItemIds.filter(
+                        (hiddenItemId) => hiddenItemId !== normalizedItemId,
+                    );
+                    if (isMockMode) {
+                        runtime.__hiddenItemIds = normalizeHiddenItemIds(
+                            nextHiddenItemIds,
+                        );
+                        store.setState({
+                            hiddenItemIds: normalizeHiddenItemIds(nextHiddenItemIds),
+                        });
+                        return;
+                    }
+
+                    await updateStoredHiddenItemIds(
+                        store,
+                        runtime,
+                        normalizeHiddenItemIds(nextHiddenItemIds),
+                    );
+                }}
+                onResetHiddenItems={async () => {
+                    if (!state.hiddenItemIds.length) return;
+                    if (isMockMode) {
+                        runtime.__hiddenItemIds = [];
+                        store.setState({ hiddenItemIds: [] });
+                        return;
+                    }
+
+                    await updateStoredHiddenItemIds(store, runtime, []);
+                }}
+            >
+                <DashboardContent
+                    runtime={runtime}
+                    hasItems={state.items.length > 0}
+                    loading={state.loading}
+                    loadingMessage={state.loadingMessage}
+                    hiddenItemCount={state.hiddenItemIds.length}
+                    filteredItems={filtered}
+                    groupEntries={groupEntries}
+                    courseOpenMap={courseOpenMap}
+                    onToggleCourse={(courseName) => {
+                        setCourseOpenMap((prev) => ({
+                            ...prev,
+                            [courseName]: !(prev[courseName] ?? true),
+                        }));
+                    }}
+                    onHideItem={async (itemId) => {
+                        const normalizedItemId = cleanText(itemId);
+                        if (!normalizedItemId) return;
+                        if (state.hiddenItemIds.includes(normalizedItemId)) return;
+
+                        const nextHiddenItemIds = normalizeHiddenItemIds([
+                            ...state.hiddenItemIds,
+                            normalizedItemId,
+                        ]);
+                        if (isMockMode) {
+                            runtime.__hiddenItemIds = nextHiddenItemIds;
+                            store.setState({
+                                hiddenItemIds: nextHiddenItemIds,
+                            });
+                            return;
+                        }
+
+                        await updateStoredHiddenItemIds(
+                            store,
+                            runtime,
+                            nextHiddenItemIds,
+                        );
+                    }}
+                />
+            </DashboardShell>
+
+            <DashboardDevPanel
+                visible={state.devPanelOpen}
+                dataSource={state.devDataSource}
+                scenarioId={state.devScenarioId}
+                itemCount={state.items.length}
+                courseCount={allCourses.length}
+                isDashboardPage={isDashboardPage}
+                settingsOpen={state.settingsOpen}
+                onClose={() => {
+                    store.setState({ devPanelOpen: false });
+                }}
+                onUseRealData={() => {
+                    runtime.__restoreDevRealSnapshot?.();
+                }}
+                onRefreshRealData={() => {
+                    runtime.__restoreDevRealSnapshot?.();
+                    runtime.__realRefreshAll?.({ force: true });
+                }}
+                onUseMockScenario={(scenarioId) => {
+                    runtime.__applyDevMockScenario?.(scenarioId);
+                }}
+                onRefreshMockScenario={() => {
+                    runtime.__refreshDevMockScenario?.();
+                }}
+                onOpenSettings={() => {
+                    store.setState({
+                        collapsed: false,
+                        settingsOpen: true,
+                    });
                 }}
             />
-        </DashboardShell>
+        </>
     );
 }

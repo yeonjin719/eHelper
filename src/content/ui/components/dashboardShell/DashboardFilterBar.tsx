@@ -1,8 +1,15 @@
+import { useEffect, useRef, useState } from 'react';
 import { DUE_FILTER_OPTIONS, TYPE_FILTER_OPTIONS } from './constants';
+import {
+    DashboardFilterDropdown,
+    type DashboardFilterDropdownOption,
+} from './DashboardFilterDropdown';
 
 interface DashboardFilterBarProps {
     filter: string[];
     typeFilter: string[];
+    hideResources: boolean;
+    hideNotices: boolean;
     allCourses: string[];
     newCourseNames: string[];
     courseFilter: string;
@@ -28,6 +35,8 @@ function toggleMultiValue(
 export function DashboardFilterBar({
     filter,
     typeFilter,
+    hideResources,
+    hideNotices,
     allCourses,
     newCourseNames,
     courseFilter,
@@ -36,45 +45,102 @@ export function DashboardFilterBar({
     onTypeFilterChange,
     onSelectCourse,
 }: DashboardFilterBarProps) {
+    const [openDropdown, setOpenDropdown] = useState<'due' | 'course' | null>(
+        null,
+    );
+    const barRef = useRef<HTMLDivElement | null>(null);
     const selectedDueFilter = filter[0] || 'ALL';
     const typeFilterSet = new Set(typeFilter);
     const isNotDoneFilterActive = selectedDueFilter === 'NOT_DONE';
+    const dueOptions: DashboardFilterDropdownOption[] = DUE_FILTER_OPTIONS;
+    const courseOptions: DashboardFilterDropdownOption[] = [
+        {
+            value: courseFilterAllValue,
+            label: '과목 전체',
+        },
+        ...allCourses.map((courseName) => ({
+            value: courseName,
+            label: `${courseName}${newCourseNames.includes(courseName) ? ' *' : ''}`,
+        })),
+    ];
+    const visibleTypeFilterOptions = TYPE_FILTER_OPTIONS.filter((option) => {
+        if (hideResources && option.value === 'RESOURCE') return false;
+        if (hideNotices && option.value === 'NOTICE') return false;
+        return true;
+    });
+
+    useEffect(() => {
+        if (!openDropdown) return;
+
+        const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+            const path =
+                typeof event.composedPath === 'function'
+                    ? event.composedPath()
+                    : [];
+
+            if (barRef.current && path.includes(barRef.current)) {
+                return;
+            }
+
+            setOpenDropdown(null);
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setOpenDropdown(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('touchstart', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('touchstart', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [openDropdown]);
 
     return (
-        <div className="space-y-2 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3">
+        <div
+            ref={barRef}
+            className="space-y-2 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3"
+        >
             <div className="grid grid-cols-2 gap-2">
-                <select
+                <DashboardFilterDropdown
                     id="ecdash-due-filter"
-                    className="h-9 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-[12px] font-medium text-zinc-700 outline-none transition focus-visible:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-100"
+                    label="마감 필터"
                     value={selectedDueFilter}
-                    onChange={(event) => {
-                        const value = event.target.value;
+                    options={dueOptions}
+                    open={openDropdown === 'due'}
+                    onToggle={() => {
+                        setOpenDropdown((current) =>
+                            current === 'due' ? null : 'due',
+                        );
+                    }}
+                    onChange={(value) => {
+                        setOpenDropdown(null);
                         onFilterChange(value === 'ALL' ? [] : [value]);
                     }}
-                >
-                    {DUE_FILTER_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
+                />
 
-                <select
+                <DashboardFilterDropdown
                     id="ecdash-course-filter"
-                    className="h-9 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-[12px] font-medium text-zinc-700 outline-none transition focus-visible:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-100"
+                    label="과목 필터"
                     value={courseFilter}
-                    onChange={(event) => {
-                        onSelectCourse(event.target.value);
+                    options={courseOptions}
+                    open={openDropdown === 'course'}
+                    onToggle={() => {
+                        setOpenDropdown((current) =>
+                            current === 'course' ? null : 'course',
+                        );
                     }}
-                >
-                    <option value={courseFilterAllValue}>과목 전체</option>
-                    {allCourses.map((courseName) => (
-                        <option key={courseName} value={courseName}>
-                            {courseName}
-                            {newCourseNames.includes(courseName) ? ' *' : ''}
-                        </option>
-                    ))}
-                </select>
+                    onChange={(value) => {
+                        setOpenDropdown(null);
+                        onSelectCourse(value);
+                    }}
+                />
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
@@ -110,7 +176,7 @@ export function DashboardFilterBar({
                     미완료
                 </button>
 
-                {TYPE_FILTER_OPTIONS.map((option) => (
+                {visibleTypeFilterOptions.map((option) => (
                     <button
                         key={option.value}
                         type="button"

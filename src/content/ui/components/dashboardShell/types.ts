@@ -33,6 +33,8 @@ export interface DashboardShellProps {
     hidePastForums: boolean;
     hideDoneLectures: boolean;
     hideDoneAssignments: boolean;
+    hideResources: boolean;
+    hideNotices: boolean;
     includeSmClass: boolean;
     hiddenItemCount: number;
     hiddenItems: HiddenItemPreview[];
@@ -48,6 +50,8 @@ export interface DashboardShellProps {
     onHidePastForumsChange: (checked: boolean) => void | Promise<void>;
     onHideDoneLecturesChange: (checked: boolean) => void | Promise<void>;
     onHideDoneAssignmentsChange: (checked: boolean) => void | Promise<void>;
+    onHideResourcesChange: (checked: boolean) => void | Promise<void>;
+    onHideNoticesChange: (checked: boolean) => void | Promise<void>;
     onIncludeSmClassChange: (checked: boolean) => void | Promise<void>;
     onUnhideItem: (itemId: string) => void | Promise<void>;
     onResetHiddenItems: () => void | Promise<void>;
