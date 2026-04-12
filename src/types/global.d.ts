@@ -5,6 +5,7 @@ declare global {
 
   interface Window {
     __ECDASH__?: Record<string, any>;
+    __ECDASH_DEV__?: Record<string, any>;
     __ECDASH_ITEMS__?: Array<Record<string, any>>;
     __ECDASH_COURSES__?: Array<Record<string, any>>;
   }

@@ -24,6 +24,12 @@
             "run_at": "document_idle"
         }
     ],
+    "web_accessible_resources": [
+        {
+            "resources": ["page-dev-bridge.js"],
+            "matches": ["https://ecampus.smu.ac.kr/*"]
+        }
+    ],
     "action": {
         "default_title": "eHelper",
         "default_popup": "dist/popup.html",
