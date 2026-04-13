@@ -1,7 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "name": "ehelper",
-  "scope": "kimyeonjins-projects",
   "framework": "vite",
   "installCommand": "npm ci",
   "buildCommand": "npm run build:ui",

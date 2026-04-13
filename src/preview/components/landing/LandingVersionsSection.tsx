@@ -23,10 +23,7 @@ export function LandingVersionsSection() {
     }
 
     return (
-        <section
-            id="versions"
-            className={landingSectionShellClass + ' w-[1000px]'}
-        >
+        <section id="versions" className={landingSectionShellClass}>
             <div className="flex flex-col items-start gap-6">
                 <div>
                     <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-sky-300">
