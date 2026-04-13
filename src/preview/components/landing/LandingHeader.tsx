@@ -27,10 +27,10 @@ export function LandingHeader() {
                     </div>
                     <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-200">
-                            eHelper
+                            eCampus Helper
                         </p>
                         <p className="text-[15px] font-semibold text-slate-100">
-                            eCampus Workflow Landing
+                            eHelper
                         </p>
                     </div>
                 </a>
