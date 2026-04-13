@@ -64,6 +64,16 @@ export function itemCardToneClass(type: ItemType) {
     return 'border-solid border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50';
 }
 
+export function itemCardActionToneClass(type: ItemType) {
+    if (type === 'ASSIGNMENT') return 'bg-white group-hover:bg-rose-50/35';
+    if (type === 'QUIZ') return 'bg-white group-hover:bg-indigo-50/35';
+    if (type === 'LECTURE') return 'bg-white group-hover:bg-sky-50/35';
+    if (type === 'FORUM') return 'bg-white group-hover:bg-amber-50/35';
+    if (type === 'RESOURCE') return 'bg-white group-hover:bg-emerald-50/35';
+    if (type === 'NOTICE') return 'bg-white group-hover:bg-violet-50/35';
+    return 'bg-white group-hover:bg-zinc-50';
+}
+
 export function ddayBadgeClass(dueAt?: number) {
     if (typeof dueAt !== 'number') {
         return 'bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200';

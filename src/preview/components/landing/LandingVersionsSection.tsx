@@ -6,6 +6,8 @@ function getReleaseTone(label: string) {
     switch (label) {
         case 'Latest':
             return 'border-sky-300/20 bg-sky-400/12 text-sky-100';
+        case 'UI':
+            return 'border-violet-300/20 bg-violet-400/12 text-violet-100';
         case 'Infra':
             return 'border-amber-300/20 bg-amber-400/12 text-amber-100';
         case 'Launch':

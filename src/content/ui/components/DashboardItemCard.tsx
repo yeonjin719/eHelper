@@ -1,6 +1,7 @@
 import type { DashboardItem, DashboardRuntime } from '../types';
 import { MdOutlineFileDownload, MdOutlineVisibilityOff } from 'react-icons/md';
 import {
+    itemCardActionToneClass,
     itemCardToneClass,
     stateBadgeClass,
     typeBadgeClass,
@@ -40,7 +41,7 @@ export function DashboardItemCard({
             role={canOpenItem ? 'button' : undefined}
             tabIndex={canOpenItem ? 0 : undefined}
             className={[
-                'w-full relative rounded-xl border px-3 py-3 text-left shadow-[0_4px_10px_rgba(15,23,42,0.05)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
+                'group w-full relative rounded-xl border px-3 py-3 text-left shadow-[0_4px_10px_rgba(15,23,42,0.05)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100',
                 canOpenItem ? 'cursor-pointer' : 'cursor-default',
                 itemCardToneClass(item.type),
             ].join(' ')}
@@ -80,7 +81,6 @@ export function DashboardItemCard({
                         )}
                     </div>
                 </div>
-
                 <div className="mb-[2px] flex items-center gap-1.5">
                     <span
                         className={[
@@ -97,39 +97,46 @@ export function DashboardItemCard({
                         {item.title}
                     </span>
                 </div>
+                <div className="flex justify-between w-full">
+                    <div className="flex flex-col gap-0.5">
+                        {detailMetaLines.map((line, index) => (
+                            <p
+                                key={`detail-${item.id}-${index}`}
+                                className="mb-0 mt-0.5 text-[12px] leading-5 break-words whitespace-normal text-zinc-500"
+                            >
+                                {line}
+                            </p>
+                        ))}
 
-                <div className="flex flex-col gap-0.5">
-                    {detailMetaLines.map((line, index) => (
-                        <p
-                            key={`detail-${item.id}-${index}`}
-                            className="mb-0 mt-0.5 text-[12px] leading-5 break-words whitespace-normal text-zinc-500"
-                        >
-                            {line}
-                        </p>
-                    ))}
+                        {extraMetaLines.map((line, index) => (
+                            <p
+                                key={`extra-${item.id}-${index}`}
+                                className="mb-0 mt-0.5 text-[12px] leading-5 break-words whitespace-normal text-zinc-500"
+                            >
+                                {line}
+                            </p>
+                        ))}
 
-                    {extraMetaLines.map((line, index) => (
-                        <p
-                            key={`extra-${item.id}-${index}`}
-                            className="mb-0 mt-0.5 text-[12px] leading-5 break-words whitespace-normal text-zinc-500"
-                        >
-                            {line}
-                        </p>
-                    ))}
-
-                    {periodMetaLines.map((line, index) => (
-                        <p
-                            key={`period-${item.id}-${index}`}
-                            className="mb-0 mt-0.5 text-[12px] leading-5 break-words whitespace-normal text-zinc-500"
-                        >
-                            {line}
-                        </p>
-                    ))}
-                    <div className="flex w-fit absolute right-2 bottom-3">
+                        {periodMetaLines.map((line, index) => (
+                            <p
+                                key={`period-${item.id}-${index}`}
+                                className="mb-0 mt-0.5 text-[12px] leading-5 break-words whitespace-normal text-zinc-500"
+                            >
+                                {line}
+                            </p>
+                        ))}
+                    </div>
+                    <div
+                        className="flex w-fit h-full self-end gap-[2px] mt-auto"
+                        style={{ alignSelf: 'end', backgroundColor: 'inherit' }}
+                    >
                         {item.type === 'RESOURCE' && item.url && (
                             <button
                                 type="button"
-                                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-none bg-white p-0 text-[14px] text-zinc-700 transition hover:border-zinc-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100"
+                                className={[
+                                    'inline-flex h-7 w-7 items-center justify-center rounded-md border border-none p-0 text-[14px] text-zinc-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100 hover:cursor-pointer',
+                                    itemCardActionToneClass(item.type),
+                                ].join(' ')}
                                 title="자료 다운로드"
                                 aria-label="자료 다운로드"
                                 onClick={(event) => {
@@ -147,7 +154,10 @@ export function DashboardItemCard({
                         )}
                         <button
                             type="button"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-none bg-white p-0 text-[14px] text-zinc-700 transition hover:border-zinc-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100"
+                            className={[
+                                'inline-flex h-7 w-7 items-center justify-center rounded-md border border-none p-0 text-[14px] text-zinc-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100 hover:cursor-pointer',
+                                itemCardActionToneClass(item.type),
+                            ].join(' ')}
                             title="이 항목 숨기기"
                             aria-label="이 항목 숨기기"
                             onClick={(event) => {

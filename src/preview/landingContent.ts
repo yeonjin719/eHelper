@@ -92,9 +92,24 @@ export const previewFixHighlights: LandingFixHighlight[] = [
 
 export const previewReleaseNotes: LandingReleaseNote[] = [
     {
+        version: '1.2.5',
+        date: '2026-04-13',
+        label: 'UI',
+        title: '대시보드 카드 액션 정렬 보정',
+        summary:
+            '상태 라벨과 카드 액션 버튼이 겹치던 레이아웃을 정리하고, 버튼 배경 톤도 카드 hover 흐름에 맞춰 다시 맞췄습니다.',
+        changes: [
+            '확인필요 라벨과 다운로드/숨기기 버튼이 겹치지 않도록 카드 액션 영역 구조 조정',
+            '카드 액션 버튼이 타입별 카드 hover 톤을 함께 따라가도록 스타일 정리',
+            '랜딩페이지와 README의 최신 업데이트 내역을 1.2.5 기준으로 동기화',
+        ],
+        benefit:
+            '자료 카드처럼 우측 메타 요소가 많은 경우에도 화면이 덜 깨지고, 카드 상호작용이 더 일관되게 보입니다.',
+    },
+    {
         version: '1.2.4',
         date: '2026-04-13',
-        label: 'Latest',
+        label: 'Core',
         title: '랜딩, 크롤링, VOD 흐름 정리',
         summary:
             '설치 전 체험용 랜딩/프리뷰를 새로 구성하고, 과목별 증분 갱신과 자료 예외 처리, CMS VOD 대응까지 전체 흐름을 함께 다듬었습니다.',

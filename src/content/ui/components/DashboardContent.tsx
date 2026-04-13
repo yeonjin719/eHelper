@@ -49,10 +49,6 @@ function LoadingOverlay({ message }: { message: string }) {
             role="status"
             aria-live="polite"
         >
-            <div
-                className="absolute left-1/2 top-0 h-28 w-[min(360px,calc(100%-32px))] -translate-x-1/2 -translate-y-6 rounded-[28px] bg-white shadow-[0_20px_48px_rgba(255,255,255,0.92)] blur-[8px]"
-                aria-hidden="true"
-            />
             <div className="relative shrink-0 flex min-w-[220px] max-w-[320px] flex-col items-center gap-3 rounded-2xl border border-zinc-300 bg-white px-5 py-4 text-center shadow-[0_18px_40px_rgba(15,23,42,0.18)]">
                 <LoadingSpinner />
                 <div className="space-y-1 text-[12px] font-semibold text-zinc-900">
