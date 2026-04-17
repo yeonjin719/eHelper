@@ -11,12 +11,16 @@
     const VOD_TURBO_RATE = 1000;
 
     E.isVodViewerPath = function isVodViewerPath(pageLocation = location) {
-        const host = String(pageLocation?.hostname || '').toLowerCase();
         const pathname = String(pageLocation?.pathname || '').toLowerCase();
         return (
             pathname.includes('/mod/vod/viewer.php') ||
-            pathname.includes('/mod/econtents/viewer.php') ||
-            (host === 'cms.smu.ac.kr' && pathname.includes('/labplayer.php'))
+            pathname.includes('/mod/econtents/viewer.php')
+            // TODO: CMS VOD 테스트 환경이 준비되면 아래 labplayer 분기를 복구하고,
+            // 플레이어 DOM 구조에 맞춰 패널 동작을 다시 구현/검증한다.
+            // ||
+            // (String(pageLocation?.hostname || '').toLowerCase() ===
+            //     'cms.smu.ac.kr' &&
+            //     pathname.includes('/labplayer.php'))
         );
     };
 
