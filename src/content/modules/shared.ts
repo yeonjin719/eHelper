@@ -65,8 +65,15 @@
 
     E.isBlockedPage = function isBlockedPage(pageLocation = location) {
         try {
+            const host = String(pageLocation?.hostname || '').toLowerCase();
             const pathname = String(pageLocation?.pathname || '').toLowerCase();
-            return pathname === '/login.php';
+            if (pathname === '/login.php') return true;
+
+            // TODO: CMS VOD를 안정적으로 검증할 테스트 환경이 준비되면
+            // cms.smu.ac.kr 차단을 해제하고 재생 패널을 다시 구현/검증한다.
+            if (host === 'cms.smu.ac.kr') return true;
+
+            return false;
         } catch {
             return false;
         }

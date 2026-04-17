@@ -92,6 +92,21 @@ export const previewFixHighlights: LandingFixHighlight[] = [
 
 export const previewReleaseNotes: LandingReleaseNote[] = [
     {
+        version: '1.2.6',
+        date: '2026-04-17',
+        label: 'VOD',
+        title: 'CMS VOD 패널 임시 비활성화',
+        summary:
+            'CMS VOD 재생 패널은 재현 가능한 테스트 환경이 준비될 때까지 잠시 내리고, 되돌릴 수 있는 TODO와 가드를 함께 남겼습니다.',
+        changes: [
+            'cms.smu.ac.kr 도메인을 임시 차단 대상으로 묶어 UI 주입과 패널 초기화를 중단',
+            'labplayer.php 기반 CMS VOD 분기는 주석 처리하고 재활성화 TODO 추가',
+            'README와 랜딩 프리뷰의 최신 업데이트 내역을 1.2.6 기준으로 동기화',
+        ],
+        benefit:
+            '테스트가 어려운 환경에서 불안정하게 패널이 뜨는 문제를 막고, 이후 재작업 지점도 바로 찾을 수 있습니다.',
+    },
+    {
         version: '1.2.5',
         date: '2026-04-13',
         label: 'UI',
