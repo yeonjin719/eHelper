@@ -3,7 +3,10 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import '../content/styles/content.css';
 import './preview.css';
+import { initializeGoogleAnalytics } from './analytics';
 import { PreviewApp } from './PreviewApp';
+
+initializeGoogleAnalytics();
 
 const rootEl = document.getElementById('preview-root');
 if (rootEl) {

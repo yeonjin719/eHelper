@@ -35,6 +35,7 @@ import {
     PREVIEW_GLOBAL_STYLE_SNAPSHOT_KEY,
     type PreviewPageId,
 } from './previewShared';
+import { trackPreviewPageView } from './analytics';
 import {
     applyScenario,
     configurePreviewShadowHost,
@@ -139,6 +140,7 @@ export function PreviewApp() {
 
     useEffect(() => {
         pageModeRef.current = previewPage === 'dashboard';
+        trackPreviewPageView(previewPage);
         if (previewPage !== 'dashboard') {
             setShadowParent(null);
             store.setState({ settingsOpen: false });
