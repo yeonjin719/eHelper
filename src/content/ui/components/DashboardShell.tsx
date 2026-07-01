@@ -54,6 +54,7 @@ export function DashboardShell({
     const { panelRef, position, dragging, handlePointerDown } =
         useDashboardFloatingPosition(collapsed);
     const isMoodleTokenMissing = /moodle_token_missing/.test(errorLog);
+    const copyableErrorLog = isMoodleTokenMissing ? '' : errorLog;
 
     return (
         <div
@@ -123,17 +124,19 @@ export function DashboardShell({
                                         )}
                                     </span>
                                     <div className="flex shrink-0 items-center gap-1">
-                                        <button
-                                            type="button"
-                                            className="rounded-md border border-red-200 bg-white px-2 py-1 font-semibold text-red-700 transition hover:bg-red-100"
-                                            onClick={() => {
-                                                void navigator.clipboard?.writeText(
-                                                    errorLog,
-                                                );
-                                            }}
-                                        >
-                                            로그 복사
-                                        </button>
+                                        {copyableErrorLog && (
+                                            <button
+                                                type="button"
+                                                className="rounded-md border border-red-200 bg-white px-2 py-1 font-semibold text-red-700 transition hover:bg-red-100"
+                                                onClick={() => {
+                                                    void navigator.clipboard?.writeText(
+                                                        copyableErrorLog,
+                                                    );
+                                                }}
+                                            >
+                                                로그 복사
+                                            </button>
+                                        )}
                                         <button
                                             type="button"
                                             aria-label="오류 알림 닫기"
@@ -156,7 +159,7 @@ export function DashboardShell({
 
                         <DashboardFooter
                             contactLink={contactLink}
-                            errorLog={errorLog}
+                            errorLog={copyableErrorLog}
                         />
                     </div>
                 )}
