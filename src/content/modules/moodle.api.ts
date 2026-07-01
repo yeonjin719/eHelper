@@ -119,7 +119,6 @@
         courseId,
         courseName,
         courseIsNew = false,
-        statusConcurrency = 2,
     }) {
         const data = await E.callMoodleApi('mod_assign_get_assignments', {
             'courseids[0]': courseId,

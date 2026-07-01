@@ -131,7 +131,7 @@ export function DashboardShell({
                                                 onClick={() => {
                                                     void navigator.clipboard?.writeText(
                                                         copyableErrorLog,
-                                                    );
+                                                    )?.catch(() => {});
                                                 }}
                                             >
                                                 로그 복사

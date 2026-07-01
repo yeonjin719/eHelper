@@ -35,6 +35,12 @@
             const key = String(courseId);
             const snippets = (E.__lastCourseCrawlHtml[key] =
                 E.__lastCourseCrawlHtml[key] || []);
+            if (
+                snippets.length >= 6 ||
+                snippets.filter((snippet) => snippet?.kind === kind).length >= 2
+            ) {
+                return;
+            }
             const doc = new DOMParser().parseFromString(
                 String(html || ''),
                 'text/html',

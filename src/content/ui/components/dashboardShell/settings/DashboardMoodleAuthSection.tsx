@@ -22,6 +22,9 @@ export function DashboardMoodleAuthSection({
             .get([MOODLE_TOKEN_KEY])
             .then((res: Record<string, unknown>) => {
                 setConnected(Boolean(res?.[MOODLE_TOKEN_KEY]));
+            })
+            .catch(() => {
+                setConnected(false);
             });
     }, [open]);
 
@@ -53,7 +56,15 @@ export function DashboardMoodleAuthSection({
                 body: params.toString(),
                 cache: 'no-store',
             });
-            const data = await res.json();
+            let data: Record<string, string> = {};
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error('토큰 발급 실패');
+            }
+            if (!res.ok) {
+                throw new Error(data?.error || '토큰 발급 실패');
+            }
             if (!data?.token) {
                 throw new Error(data?.error || '토큰 발급 실패');
             }

@@ -225,7 +225,7 @@
     }
 
     function errorMessage(err) {
-        return E.cleanText(err?.stack || err?.message || err || 'unknown error');
+        return String(err?.stack || err?.message || err || 'unknown error').trim();
     }
 
     function buildFailureLog(failures) {

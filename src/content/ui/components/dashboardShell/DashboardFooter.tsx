@@ -23,7 +23,9 @@ export function DashboardFooter({
                         type="button"
                         className="font-semibold text-red-600 bg-white transition hover:text-red-800 border-none"
                         onClick={() => {
-                            void navigator.clipboard?.writeText(errorLog);
+                            void navigator.clipboard
+                                ?.writeText(errorLog)
+                                ?.catch(() => {});
                         }}
                     >
                         오류 로그 복사
