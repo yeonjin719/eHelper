@@ -20,7 +20,10 @@
 
     async function requestMoodleApi(wsfunction, params = {}) {
         const token = await getStoredMoodleToken();
-        if (!token) throw new Error('Moodle token missing');
+        if (!token) {
+            E.__moodleTokenMissing = true;
+            throw new Error('Moodle token missing');
+        }
 
         const query = new URLSearchParams({
             wstoken: token,

@@ -419,12 +419,19 @@
                     ? result.items
                     : [];
                 if (result?.ok === false || !resultItems.length) {
+                    const failureReason =
+                        E.__lastCourseCrawlFailureReason?.[courseId] ||
+                        result.reason ||
+                        'crawl_failed';
                     failedCourseCount += 1;
                     failures.push({
                         course,
-                        reason: result.reason || 'crawl_failed',
+                        reason: failureReason,
                         message:
                             result.message ||
+                            (failureReason === 'moodle_token_missing'
+                                ? '설정에서 eCampus API 로그인이 필요함'
+                                : '') ||
                             (!resultItems.length
                                 ? '과목 수집 결과가 비어 있음'
                                 : '과목 수집 실패'),

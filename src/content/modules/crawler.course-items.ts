@@ -430,6 +430,12 @@
         try {
             return await crawlApiFallback();
         } catch (err) {
+            if (/Moodle token missing/i.test(String(err?.message || err))) {
+                E.__lastCourseCrawlFailureReason =
+                    E.__lastCourseCrawlFailureReason || {};
+                E.__lastCourseCrawlFailureReason[String(courseId)] =
+                    'moodle_token_missing';
+            }
             console.debug(
                 `[ECDASH] Moodle API fallback failed. courseId=${courseId}`,
                 err,

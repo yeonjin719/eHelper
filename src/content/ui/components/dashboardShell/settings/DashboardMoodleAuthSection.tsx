@@ -78,7 +78,7 @@ export function DashboardMoodleAuthSection({
     return (
         <SettingsSection
             title="eCampus API 연결"
-            description="과제, 퀴즈, 자료를 Moodle API로 더 안정적으로 불러옵니다."
+            description="설정 후 새로고침하면 eCampus 로그인이 풀릴 수 있어요. 다시 로그인하고 사용하면 됩니다."
             badgeText={connected ? '연결됨' : '토큰 필요'}
             open={open}
             onToggle={onToggleOpen}
