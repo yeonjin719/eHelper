@@ -335,8 +335,13 @@ failures=1
 #1
 courseId=96598
 courseName=커리어디자인
-reason=empty_items
-message=과목 수집 결과가 비어 있음`,
+reason=course_html_failed
+message=과목 활동 HTML을 불러오지 못함
+html=
+kind=assignment:index
+----- HTML START -----
+<table class="generaltable"><tbody><tr><td>테스트 과제 HTML</td></tr></tbody></table>
+----- HTML END -----`,
                     ),
                 );
                 break;

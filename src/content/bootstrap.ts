@@ -240,18 +240,24 @@
             '',
             ...rows.map((failure, index) => {
                 const course = failure?.course || {};
-                const html = String(
-                    E.__lastCourseCrawlHtml?.[String(course.courseId)] || '',
-                ).trim();
+                const snippets = Array.isArray(
+                    E.__lastCourseCrawlHtml?.[String(course.courseId)],
+                )
+                    ? E.__lastCourseCrawlHtml[String(course.courseId)]
+                    : [];
+                const html = snippets
+                    .map(
+                        (snippet) =>
+                            `kind=${snippet.kind || '-'}\n----- HTML START -----\n${String(snippet.html || '').trim()}\n----- HTML END -----`,
+                    )
+                    .join('\n\n');
                 return [
                     `#${index + 1}`,
                     `courseId=${course.courseId || '-'}`,
                     `courseName=${course.courseName || '-'}`,
                     `reason=${failure?.reason || '-'}`,
                     `message=${failure?.message || '-'}`,
-                    html
-                        ? `html=\n----- HTML START -----\n${html}\n----- HTML END -----`
-                        : 'html=-',
+                    html ? `html=\n${html}` : 'html=-',
                 ].join('\n');
             }),
         ].join('\n');
@@ -269,19 +275,9 @@
             async (course) => {
                 try {
                     const items = await E.crawlCourseItems(course);
-                    if (!Array.isArray(items) || !items.length) {
-                        return {
-                            course,
-                            items: [],
-                            ok: false,
-                            reason: 'empty_items',
-                            message: '과목 수집 결과가 비어 있음',
-                        };
-                    }
-
                     return {
                         course,
-                        items,
+                        items: Array.isArray(items) ? items : [],
                         ok: true,
                     };
                 } catch (err) {
@@ -418,23 +414,23 @@
                 const resultItems = Array.isArray(result?.items)
                     ? result.items
                     : [];
-                if (result?.ok === false || !resultItems.length) {
-                    const failureReason =
-                        E.__lastCourseCrawlFailureReason?.[courseId] ||
-                        result.reason ||
-                        'crawl_failed';
+                const failureReason =
+                    E.__lastCourseCrawlFailureReason?.[courseId] ||
+                    result.reason ||
+                    '';
+                if (result?.ok === false || failureReason) {
                     failedCourseCount += 1;
                     failures.push({
                         course,
-                        reason: failureReason,
+                        reason: failureReason || 'crawl_failed',
                         message:
                             result.message ||
                             (failureReason === 'moodle_token_missing'
                                 ? '설정에서 eCampus API 로그인이 필요함'
+                                : failureReason === 'course_html_failed'
+                                  ? '과목 활동 HTML을 불러오지 못함'
                                 : '') ||
-                            (!resultItems.length
-                                ? '과목 수집 결과가 비어 있음'
-                                : '과목 수집 실패'),
+                            '과목 수집 실패',
                     });
                     crawledItems.push(
                         ...bindItemsToCourse(

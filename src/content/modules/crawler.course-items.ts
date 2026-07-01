@@ -24,6 +24,29 @@
             1,
             Number(E.constants?.DETAIL_ENRICH_CONCURRENCY || 2),
         );
+        E.__lastCourseCrawlHtml = E.__lastCourseCrawlHtml || {};
+        E.__lastCourseCrawlFailureReason =
+            E.__lastCourseCrawlFailureReason || {};
+        E.__lastCourseCrawlHtml[String(courseId)] = [];
+        delete E.__lastCourseCrawlFailureReason[String(courseId)];
+        let courseHubFailed = false;
+        const saveHtmlSnippet = (kind, html, selectors = []) => {
+            E.__lastCourseCrawlHtml = E.__lastCourseCrawlHtml || {};
+            const key = String(courseId);
+            const snippets = (E.__lastCourseCrawlHtml[key] =
+                E.__lastCourseCrawlHtml[key] || []);
+            const doc = new DOMParser().parseFromString(
+                String(html || ''),
+                'text/html',
+            );
+            const node = selectors
+                .map((selector) => doc.querySelector(selector))
+                .find(Boolean);
+            snippets.push({
+                kind,
+                html: String(node?.outerHTML || html || '').slice(0, 20000),
+            });
+        };
         const crawlApiFallback = async () => {
             if (typeof E.fetchMoodleCourseContents !== 'function') return [];
 
@@ -78,6 +101,11 @@
                 const assignHtml = await E.fetchHtml(
                     `/mod/assign/index.php?id=${courseId}`,
                 );
+                saveHtmlSnippet('assignment:index', assignHtml, [
+                    'table.generaltable',
+                    '#region-main',
+                    '[role="main"]',
+                ]);
                 const assignItems = E.parseAssignIndexHtml(
                     assignHtml,
                     courseId,
@@ -125,6 +153,11 @@
                 const quizHtml = await E.fetchHtml(
                     `/mod/quiz/index.php?id=${courseId}`,
                 );
+                saveHtmlSnippet('quiz:index', quizHtml, [
+                    'table.generaltable',
+                    '#region-main',
+                    '[role="main"]',
+                ]);
                 const quizItems = E.parseQuizIndexHtml(
                     quizHtml,
                     courseId,
@@ -179,10 +212,11 @@
             const courseHtml = await E.fetchHtml(
                 `/course/view.php?id=${courseId}`,
             );
-            E.__lastCourseCrawlHtml = E.__lastCourseCrawlHtml || {};
-            E.__lastCourseCrawlHtml[String(courseId)] = String(
-                courseHtml || '',
-            ).slice(0, 50000);
+            saveHtmlSnippet('course:activities', courseHtml, [
+                '.course-content',
+                '#region-main',
+                '[role="main"]',
+            ]);
             courseDoc = new DOMParser().parseFromString(
                 courseHtml,
                 'text/html',
@@ -256,6 +290,11 @@
                     async (reportUrl) => {
                         try {
                             const reportHtml = await E.fetchHtml(reportUrl);
+                            saveHtmlSnippet('lecture:report', reportHtml, [
+                                'table',
+                                '#region-main',
+                                '[role="main"]',
+                            ]);
                             const reportMap =
                                 E.parseStatusRowsFromReportHtml(reportHtml);
                             const rowsCount = Array.isArray(reportMap.rows)
@@ -411,6 +450,11 @@
                 ...noticeItems,
             );
         } catch (err) {
+            courseHubFailed = true;
+            E.__lastCourseCrawlFailureReason =
+                E.__lastCourseCrawlFailureReason || {};
+            E.__lastCourseCrawlFailureReason[String(courseId)] =
+                'course_html_failed';
             console.warn(
                 `[ECDASH] course hub crawl failed. courseId=${courseId} (${normalizedCourseName})`,
                 err,
@@ -426,9 +470,14 @@
 
         const items = E.dedupeItems(all);
         if (items.length) return items;
+        if (!courseHubFailed) return [];
 
         try {
-            return await crawlApiFallback();
+            const apiItems = await crawlApiFallback();
+            if (apiItems.length) {
+                delete E.__lastCourseCrawlFailureReason[String(courseId)];
+            }
+            return apiItems;
         } catch (err) {
             if (/Moodle token missing/i.test(String(err?.message || err))) {
                 E.__lastCourseCrawlFailureReason =
