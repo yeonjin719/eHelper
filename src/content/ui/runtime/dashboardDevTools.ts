@@ -323,6 +323,31 @@ export function attachDashboardDevTools({
                     devPanelOpen: true,
                 });
                 break;
+            case 'preview-error-log':
+                runtime.setErrorLog?.(
+                    String(
+                        detail.text ||
+                            `[eHelper] eCampus 수집 실패 로그
+time=${new Date().toLocaleString()}
+url=${location.href}
+failures=1
+
+#1
+courseId=96598
+courseName=커리어디자인
+reason=course_html_failed
+message=과목 활동 HTML을 불러오지 못함
+html=
+kind=assignment:index
+----- HTML START -----
+<table class="generaltable"><tbody><tr><td>테스트 과제 HTML</td></tr></tbody></table>
+----- HTML END -----`,
+                    ),
+                );
+                break;
+            case 'clear-error-log':
+                runtime.setErrorLog?.('');
+                break;
             default:
                 break;
         }

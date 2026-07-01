@@ -8,6 +8,7 @@ import './modules/shared';
 import './modules/vod';
 import './modules/vod.panel';
 import './modules/crawler.course';
+import './modules/moodle.api';
 import './modules/crawler';
 import './modules/crawler.meta';
 import './modules/crawler.activity';

@@ -37,6 +37,7 @@ export function initializeRuntimeState(runtime: DashboardRuntime) {
     runtime.__hiddenItemIds = normalizeHiddenItemIds(runtime.__hiddenItemIds);
     runtime.__lastBadge = cleanText(runtime.__lastBadge || '');
     runtime.__lastSub = cleanText(runtime.__lastSub || '');
+    runtime.__lastErrorLog = String(runtime.__lastErrorLog || '').trim();
 }
 
 // 런타임 값을 기준으로 UIStore의 초기 상태를 생성한다.
@@ -62,6 +63,7 @@ export function createUiStore(runtime: DashboardRuntime) {
         loadingMessage: runtime.__loadingMessage || '데이터를 가져오는 중...',
         badge: runtime.__lastBadge || '',
         sub: runtime.__lastSub || '대시보드에서 과목을 찾고 활동을 크롤링해요.',
+        errorLog: String(runtime.__lastErrorLog || '').trim(),
         settingsOpen: false,
         devPanelOpen: false,
         devDataSource: 'real',
@@ -156,5 +158,6 @@ export function syncStoreFromRuntime(
         hideNotices: Boolean(runtime.__hideNotices),
         includeSmClass: Boolean(runtime.__includeSmClass),
         hiddenItemIds: normalizeHiddenItemIds(runtime.__hiddenItemIds),
+        errorLog: String(runtime.__lastErrorLog || '').trim(),
     });
 }

@@ -19,6 +19,7 @@ export function DashboardShell({
     courseFilterAllValue,
     settingsOpen,
     contactLink,
+    errorLog,
     hidePastLectures,
     hidePastAssignments,
     hidePastForums,
@@ -33,6 +34,7 @@ export function DashboardShell({
     onFilterChange,
     onTypeFilterChange,
     onRefresh,
+    onClearErrorLog,
     onOpenSettings,
     onSelectCourse,
     onCloseSettings,
@@ -51,6 +53,8 @@ export function DashboardShell({
     const settingsVisible = settingsOpen && !collapsed && isDashboardPage;
     const { panelRef, position, dragging, handlePointerDown } =
         useDashboardFloatingPosition(collapsed);
+    const isMoodleTokenMissing = /moodle_token_missing/.test(errorLog);
+    const copyableErrorLog = isMoodleTokenMissing ? '' : errorLog;
 
     return (
         <div
@@ -97,6 +101,55 @@ export function DashboardShell({
                             onSelectCourse={onSelectCourse}
                         />
 
+                        {errorLog && (
+                            <div className="border-y border-red-100 bg-red-50 px-4 py-2 text-[12px] text-red-700">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="font-semibold">
+                                        {isMoodleTokenMissing ? (
+                                            <>
+                                                설정에서 eCampus API 로그인을 해주세요.
+                                                <br />
+                                                처음 연결 후 새로고침하면 eCampus
+                                                로그인이 풀릴 수 있어요.
+                                                <br />
+                                                다시 로그인하고 사용하면 됩니다.
+                                            </>
+                                        ) : (
+                                            <>
+                                                일부 수집에 실패했어요. <br /> 아래
+                                                문의하기를 통해 오류 로그를 보내주시면
+                                                <br />
+                                                문제 해결에 큰 도움이 됩니다.
+                                            </>
+                                        )}
+                                    </span>
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        {copyableErrorLog && (
+                                            <button
+                                                type="button"
+                                                className="rounded-md border border-red-200 bg-white px-2 py-1 font-semibold text-red-700 transition hover:bg-red-100"
+                                                onClick={() => {
+                                                    void navigator.clipboard?.writeText(
+                                                        copyableErrorLog,
+                                                    )?.catch(() => {});
+                                                }}
+                                            >
+                                                로그 복사
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            aria-label="오류 알림 닫기"
+                                            className="h-7 w-7 rounded-md border border-red-200 bg-white font-semibold text-red-700 transition hover:bg-red-100"
+                                            onClick={onClearErrorLog}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <main
                             id="ecdash-list"
                             className="ecdash-scroll min-h-0 max-h-[50vh] flex-1 overflow-y-auto bg-[#f9fafb] px-4 py-3"
@@ -104,7 +157,10 @@ export function DashboardShell({
                             {children}
                         </main>
 
-                        <DashboardFooter contactLink={contactLink} />
+                        <DashboardFooter
+                            contactLink={contactLink}
+                            errorLog={copyableErrorLog}
+                        />
                     </div>
                 )}
             </section>

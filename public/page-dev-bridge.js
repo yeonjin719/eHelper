@@ -137,4 +137,12 @@
     devApi.openSettings = function openSettings() {
         dispatchDevCommand('open-settings');
     };
+
+    devApi.previewErrorLog = function previewErrorLog(text) {
+        dispatchDevCommand('preview-error-log', { text });
+    };
+
+    devApi.clearErrorLog = function clearErrorLog() {
+        dispatchDevCommand('clear-error-log');
+    };
 })();
