@@ -92,6 +92,21 @@ export const previewFixHighlights: LandingFixHighlight[] = [
 
 export const previewReleaseNotes: LandingReleaseNote[] = [
     {
+        version: '1.2.7',
+        date: '2026-07-02',
+        label: '안정성',
+        title: '수집 실패 안내와 API fallback 개선',
+        summary:
+            'HTML 파싱을 우선 유지하면서 실패 시 API fallback을 보조로 사용하고, 문제 제보용 오류 로그 복사 흐름을 추가했습니다.',
+        changes: [
+            '과목 수집 실패 시 관련 활동 HTML 조각을 포함한 오류 로그 복사 기능 추가',
+            'eCampus API 토큰 연결 UI와 토큰 미설정 안내 추가',
+            '결과가 비어 있는 정상 과목은 실패로 처리하지 않도록 실패 판정 기준 조정',
+        ],
+        benefit:
+            '평소 속도는 유지하면서 파싱 실패 상황을 더 쉽게 확인하고 제보할 수 있습니다.',
+    },
+    {
         version: '1.2.6',
         date: '2026-04-17',
         label: 'VOD',
