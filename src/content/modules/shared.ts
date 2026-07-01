@@ -14,6 +14,7 @@
         STORAGE_COURSES_KEY: `${storagePrefix}:courses`,
         STORAGE_COURSES_LAST_SYNC: `${storagePrefix}:courses:lastSyncAt`,
         STORAGE_COURSE_RUN_MAP: `${storagePrefix}:courses:lastRunMap`,
+        MOODLE_TOKEN_KEY: `${storagePrefix}:moodleToken`,
         CRAWL_CONCURRENCY: 3,
         DETAIL_ENRICH_CONCURRENCY: 2,
         REPORT_FETCH_CONCURRENCY: 2,

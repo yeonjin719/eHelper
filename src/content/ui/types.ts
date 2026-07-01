@@ -44,6 +44,7 @@ export interface UiState {
     loadingMessage: string;
     badge: string;
     sub: string;
+    errorLog: string;
     settingsOpen: boolean;
     devPanelOpen: boolean;
     devDataSource: DashboardDevDataSource;

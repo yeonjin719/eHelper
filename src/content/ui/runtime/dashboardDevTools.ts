@@ -323,6 +323,26 @@ export function attachDashboardDevTools({
                     devPanelOpen: true,
                 });
                 break;
+            case 'preview-error-log':
+                runtime.setErrorLog?.(
+                    String(
+                        detail.text ||
+                            `[eHelper] eCampus 수집 실패 로그
+time=${new Date().toLocaleString()}
+url=${location.href}
+failures=1
+
+#1
+courseId=96598
+courseName=커리어디자인
+reason=empty_items
+message=과목 수집 결과가 비어 있음`,
+                    ),
+                );
+                break;
+            case 'clear-error-log':
+                runtime.setErrorLog?.('');
+                break;
             default:
                 break;
         }

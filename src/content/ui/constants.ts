@@ -16,4 +16,5 @@ export const UI_HIDE_NOTICES_KEY = `${UI_STORAGE_PREFIX}:hideNotices`;
 export const UI_INCLUDE_SM_CLASS_KEY = `${UI_STORAGE_PREFIX}:includeSmClass`;
 export const UI_HIDDEN_ITEM_IDS_KEY = `${UI_STORAGE_PREFIX}:hiddenItemIds`;
 export const UI_PANEL_POSITION_KEY = `${UI_STORAGE_PREFIX}:panelPosition`;
+export const MOODLE_TOKEN_KEY = `${runtimeStoragePrefix}:moodleToken`;
 export const REPORT_EMAIL = 'kyj0719@gmail.com';

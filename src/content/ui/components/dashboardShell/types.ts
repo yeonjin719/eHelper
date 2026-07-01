@@ -28,6 +28,7 @@ export interface DashboardShellProps {
     courseFilterAllValue: string;
     settingsOpen: boolean;
     contactLink: string;
+    errorLog: string;
     hidePastLectures: boolean;
     hidePastAssignments: boolean;
     hidePastForums: boolean;
@@ -42,6 +43,7 @@ export interface DashboardShellProps {
     onFilterChange: (values: string[]) => void;
     onTypeFilterChange: (values: string[]) => void;
     onRefresh: () => void;
+    onClearErrorLog: () => void;
     onOpenSettings: () => void;
     onSelectCourse: (course: string) => void;
     onCloseSettings: () => void;

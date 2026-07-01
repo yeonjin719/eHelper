@@ -157,6 +157,7 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
                 courseFilterAllValue={COURSE_FILTER_ALL}
                 settingsOpen={state.settingsOpen}
                 contactLink={contactLink}
+                errorLog={state.errorLog}
                 hidePastLectures={state.hidePastLectures}
                 hidePastAssignments={state.hidePastAssignments}
                 hidePastForums={state.hidePastForums}
@@ -178,6 +179,9 @@ export function DashboardApp({ store, runtime }: DashboardAppProps) {
                 }}
                 onRefresh={() => {
                     runtime.refreshAll?.({ force: true });
+                }}
+                onClearErrorLog={() => {
+                    runtime.setErrorLog?.('');
                 }}
                 onOpenSettings={() => {
                     if (Date.now() - lastSettingsCloseAtRef.current < 250) return;

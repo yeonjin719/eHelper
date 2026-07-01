@@ -1,8 +1,12 @@
 interface DashboardFooterProps {
     contactLink: string;
+    errorLog?: string;
 }
 
-export function DashboardFooter({ contactLink }: DashboardFooterProps) {
+export function DashboardFooter({
+    contactLink,
+    errorLog,
+}: DashboardFooterProps) {
     const currentYear = new Date().getFullYear();
 
     return (
@@ -13,15 +17,28 @@ export function DashboardFooter({ contactLink }: DashboardFooterProps) {
             <span className="ecdash-copyright font-medium">
                 © {currentYear} Cotton. All rights reserved.
             </span>
-            <a
-                id="ecdash-contact-link"
-                href={contactLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ecdash-contact-link font-semibold text-zinc-700 transition hover:text-zinc-900"
-            >
-                문의
-            </a>
+            <span className="flex items-center gap-2">
+                {errorLog && (
+                    <button
+                        type="button"
+                        className="font-semibold text-red-600 bg-white transition hover:text-red-800 border-none"
+                        onClick={() => {
+                            void navigator.clipboard?.writeText(errorLog);
+                        }}
+                    >
+                        오류 로그 복사
+                    </button>
+                )}
+                <a
+                    id="ecdash-contact-link"
+                    href={contactLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ecdash-contact-link font-semibold text-zinc-700 transition hover:text-zinc-900"
+                >
+                    문의
+                </a>
+            </span>
         </footer>
     );
 }

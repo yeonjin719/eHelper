@@ -24,6 +24,55 @@
             1,
             Number(E.constants?.DETAIL_ENRICH_CONCURRENCY || 2),
         );
+        const crawlApiFallback = async () => {
+            if (typeof E.fetchMoodleCourseContents !== 'function') return [];
+
+            const contents = await E.fetchMoodleCourseContents(courseId);
+            if (!Array.isArray(contents) || !contents.length) return [];
+
+            const [assignments, quizzes, lectures, resources] =
+                await Promise.all([
+                    typeof E.fetchMoodleAssignmentItems === 'function'
+                        ? E.fetchMoodleAssignmentItems({
+                              courseId,
+                              courseName: normalizedCourseName,
+                              courseIsNew: normalizedCourseIsNew,
+                          })
+                        : Promise.resolve([]),
+                    typeof E.fetchMoodleQuizItems === 'function'
+                        ? E.fetchMoodleQuizItems({
+                              courseId,
+                              courseName: normalizedCourseName,
+                              courseIsNew: normalizedCourseIsNew,
+                              contents,
+                          })
+                        : Promise.resolve([]),
+                    typeof E.fetchMoodleLectureItems === 'function'
+                        ? E.fetchMoodleLectureItems({
+                              courseId,
+                              courseName: normalizedCourseName,
+                              courseIsNew: normalizedCourseIsNew,
+                              contents,
+                          })
+                        : Promise.resolve([]),
+                    !shouldSkipResources &&
+                    typeof E.fetchMoodleResourceItems === 'function'
+                        ? E.fetchMoodleResourceItems({
+                              courseId,
+                              courseName: normalizedCourseName,
+                              courseIsNew: normalizedCourseIsNew,
+                              contents,
+                          })
+                        : Promise.resolve([]),
+                ]);
+
+            return E.dedupeItems([
+                ...assignments,
+                ...quizzes,
+                ...lectures,
+                ...resources,
+            ]);
+        };
         const crawlAssignmentItems = async () => {
             try {
                 const assignHtml = await E.fetchHtml(
@@ -130,6 +179,10 @@
             const courseHtml = await E.fetchHtml(
                 `/course/view.php?id=${courseId}`,
             );
+            E.__lastCourseCrawlHtml = E.__lastCourseCrawlHtml || {};
+            E.__lastCourseCrawlHtml[String(courseId)] = String(
+                courseHtml || '',
+            ).slice(0, 50000);
             courseDoc = new DOMParser().parseFromString(
                 courseHtml,
                 'text/html',
@@ -371,6 +424,17 @@
 
         all.push(...assignmentItems, ...quizItems);
 
-        return E.dedupeItems(all);
+        const items = E.dedupeItems(all);
+        if (items.length) return items;
+
+        try {
+            return await crawlApiFallback();
+        } catch (err) {
+            console.debug(
+                `[ECDASH] Moodle API fallback failed. courseId=${courseId}`,
+                err,
+            );
+            return [];
+        }
     };
 })();

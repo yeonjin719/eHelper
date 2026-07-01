@@ -41,6 +41,13 @@ export function attachDashboardRuntimeApi({
         store.setState({ sub: next });
     };
 
+    runtime.setErrorLog = function setErrorLog(text: string) {
+        mountReactRoot();
+        const next = String(text || '').trim();
+        runtime.__lastErrorLog = next;
+        store.setState({ errorLog: next });
+    };
+
     runtime.setLoading = function setLoading(
         isLoading: boolean,
         message?: string,

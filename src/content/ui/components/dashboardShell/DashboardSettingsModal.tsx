@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { HiddenItemPreview } from './types';
 import { DashboardFiltersSection } from './settings/DashboardFiltersSection';
 import { DashboardHiddenItemsSection } from './settings/DashboardHiddenItemsSection';
+import { DashboardMoodleAuthSection } from './settings/DashboardMoodleAuthSection';
 import {
     buildHiddenSummaryText,
     filterHiddenItems,
@@ -57,12 +58,14 @@ export function DashboardSettingsModal({
     onResetHiddenItems,
 }: DashboardSettingsModalProps) {
     const [hiddenSearch, setHiddenSearch] = useState('');
+    const [moodleAuthOpen, setMoodleAuthOpen] = useState(true);
     const [filtersOpen, setFiltersOpen] = useState(true);
     const [hiddenItemsOpen, setHiddenItemsOpen] = useState(true);
 
     useEffect(() => {
         if (!visible) {
             setHiddenSearch('');
+            setMoodleAuthOpen(true);
             setFiltersOpen(true);
             setHiddenItemsOpen(true);
         }
@@ -146,6 +149,13 @@ export function DashboardSettingsModal({
                 </div>
 
                 <div className="space-y-4">
+                    <DashboardMoodleAuthSection
+                        open={moodleAuthOpen}
+                        onToggleOpen={() => {
+                            setMoodleAuthOpen((prev) => !prev);
+                        }}
+                    />
+
                     <DashboardFiltersSection
                         open={filtersOpen}
                         hidePastLectures={hidePastLectures}

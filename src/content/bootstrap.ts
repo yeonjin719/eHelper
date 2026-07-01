@@ -224,6 +224,39 @@
         }));
     }
 
+    function errorMessage(err) {
+        return E.cleanText(err?.stack || err?.message || err || 'unknown error');
+    }
+
+    function buildFailureLog(failures) {
+        const rows = Array.isArray(failures) ? failures : [];
+        if (!rows.length) return '';
+
+        return [
+            '[eHelper] eCampus 수집 실패 로그',
+            `time=${new Date().toLocaleString()}`,
+            `url=${location.href}`,
+            `failures=${rows.length}`,
+            '',
+            ...rows.map((failure, index) => {
+                const course = failure?.course || {};
+                const html = String(
+                    E.__lastCourseCrawlHtml?.[String(course.courseId)] || '',
+                ).trim();
+                return [
+                    `#${index + 1}`,
+                    `courseId=${course.courseId || '-'}`,
+                    `courseName=${course.courseName || '-'}`,
+                    `reason=${failure?.reason || '-'}`,
+                    `message=${failure?.message || '-'}`,
+                    html
+                        ? `html=\n----- HTML START -----\n${html}\n----- HTML END -----`
+                        : 'html=-',
+                ].join('\n');
+            }),
+        ].join('\n');
+    }
+
     async function crawlCoursesWithResults(courses) {
         if (typeof E.crawlCoursesWithConcurrency === 'function') {
             const results = await E.crawlCoursesWithConcurrency(courses);
@@ -235,9 +268,20 @@
             E.constants.CRAWL_CONCURRENCY,
             async (course) => {
                 try {
+                    const items = await E.crawlCourseItems(course);
+                    if (!Array.isArray(items) || !items.length) {
+                        return {
+                            course,
+                            items: [],
+                            ok: false,
+                            reason: 'empty_items',
+                            message: '과목 수집 결과가 비어 있음',
+                        };
+                    }
+
                     return {
                         course,
-                        items: await E.crawlCourseItems(course),
+                        items,
                         ok: true,
                     };
                 } catch (err) {
@@ -249,6 +293,8 @@
                         course,
                         items: [],
                         ok: false,
+                        reason: 'exception',
+                        message: errorMessage(err),
                     };
                 }
             },
@@ -312,6 +358,7 @@
                 reusedCourseCount: 0,
                 crawledCourseCount: 0,
                 failedCourseCount: 0,
+                failures: [],
             };
         }
 
@@ -354,6 +401,7 @@
 
         const crawledItems = [];
         let failedCourseCount = 0;
+        const failures = [];
 
         if (coursesToCrawl.length) {
             const results = await crawlCoursesWithResults(coursesToCrawl);
@@ -367,8 +415,20 @@
                 if (!courseId) return;
 
                 handledCourseIds.add(courseId);
-                if (result?.ok === false) {
+                const resultItems = Array.isArray(result?.items)
+                    ? result.items
+                    : [];
+                if (result?.ok === false || !resultItems.length) {
                     failedCourseCount += 1;
+                    failures.push({
+                        course,
+                        reason: result.reason || 'crawl_failed',
+                        message:
+                            result.message ||
+                            (!resultItems.length
+                                ? '과목 수집 결과가 비어 있음'
+                                : '과목 수집 실패'),
+                    });
                     crawledItems.push(
                         ...bindItemsToCourse(
                             snapshotItemsByCourse.get(courseId),
@@ -379,7 +439,7 @@
                 }
 
                 nextRunMap[courseId] = now;
-                crawledItems.push(...bindItemsToCourse(result?.items, course));
+                crawledItems.push(...bindItemsToCourse(resultItems, course));
             });
 
             coursesToCrawl.forEach((course) => {
@@ -387,6 +447,11 @@
                 if (!courseId || handledCourseIds.has(courseId)) return;
 
                 failedCourseCount += 1;
+                failures.push({
+                    course,
+                    reason: 'missing_result',
+                    message: '과목 수집 결과 누락',
+                });
                 crawledItems.push(
                     ...bindItemsToCourse(snapshotItemsByCourse.get(courseId), course),
                 );
@@ -402,6 +467,7 @@
             reusedCourseCount,
             crawledCourseCount: coursesToCrawl.length,
             failedCourseCount,
+            failures,
         };
     }
 
@@ -541,6 +607,7 @@
                         ? 'CACHE'
                         : 'OK',
                 );
+                E.setErrorLog?.(buildFailureLog(refreshed.failures));
                 E.setSub(summarizeRefreshOutcome(visibleItems, refreshed));
                 E.render(visibleItems);
                 return;
@@ -678,11 +745,21 @@
                     ? 'CACHE'
                     : 'OK',
             );
+            E.setErrorLog?.(buildFailureLog(refreshed.failures));
             E.setSub(summarizeRefreshOutcome(mergedItems, refreshed));
             E.render(mergedItems);
         } catch (e) {
             console.error(e);
             E.setBadge('ERR');
+            E.setErrorLog?.(
+                buildFailureLog([
+                    {
+                        course: getCurrentCourse() || {},
+                        reason: 'refresh_exception',
+                        message: errorMessage(e),
+                    },
+                ]),
+            );
             E.setSub(
                 '크롤링 중 오류가 발생했어요. (로그인 상태/권한/네트워크 확인)',
             );
